@@ -330,7 +330,7 @@ Then I selected the last failed workflow run and re-run the failed job.
 
 The final step was to configure the Hugo site and pubish the post.
 
-I took the `Config.toml example` in [Binaro Configuration](https://github.com/vimux/binario#configuration) documentation and adjusted it to [my needs](https://github.com/jkirk/jkirk.github.io/blob/gh-pages-hugo/config.toml).
+I took the `Config.toml` example in the [Binaro Configuration](https://github.com/vimux/binario#configuration) documentation and adjusted it to [my needs](https://github.com/jkirk/jkirk.github.io/blob/gh-pages-hugo/config.toml).
 
 I was not sure what "Params.Breadcrumb" was for:
 
