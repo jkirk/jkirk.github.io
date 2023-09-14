@@ -4,9 +4,13 @@ created: 2023-08-02T00:12:17+0200
 date: 2023-08-08T17:31:59+0200
 ---
 
+A couple of years ago, I found a tutorial that showed how to use [Jekyll](https://jekyllrb.com/) to set up GitHub pages.
+I never got very far. This guide shows how to use [Hugo](https://gohugo.io/) to do the same thing.
+<!--more-->
+
 ## Introduction
 
-A few years ago I found [Using Jekyll, Asciidoctor and GitHub Pages for Static Site Creation](https://yermilov.github.io/blog/2017/02/20/using-jekyll-asciidoctor-and-github-pages-for-static-site-creation/) from [@yermilov](https://github.com/yermilov).
+A few years ago I found the blog "[Using Jekyll, Asciidoctor and GitHub Pages for Static Site Creation](https://yermilov.github.io/blog/2017/02/20/using-jekyll-asciidoctor-and-github-pages-for-static-site-creation/)" from [@yermilov](https://github.com/yermilov).
 It inspired me to start and set up my own Jekyll blog on GitHub Pages.
 I followed @yermilov's quick start guide, created a simple Jekyll site and deployed it on my GitHub Page.
 
@@ -20,7 +24,7 @@ Anyway, the blog was made with [Jekyll](https://jekyllrb.com/) and in the meanti
 
 First, I had to figure out how to deploy the Hugo site to my GitHub Page.
 
-Some documentation before I started my journey:
+I read some documentation before I started my journey:
 
 * [GitHub Pages](https://pages.github.com/)
 * [Hugo | Host on GitHub Pages](https://gohugo.io/hosting-and-deployment/hosting-on-github/)
