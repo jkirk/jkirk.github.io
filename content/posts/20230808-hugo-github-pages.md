@@ -2,7 +2,7 @@
 title: "How to deploy a Hugo Site as GitHub Page"
 created: 2023-08-02T00:12:17+0200
 date: 2023-08-08T17:31:59+0200
-modified: 2023-09-15T00:59:02+0200
+modified: 2023-09-15T01:33:50+0200
 ---
 
 A couple of years ago, I found a tutorial that showed how to use [Jekyll](https://jekyllrb.com/) to set up GitHub pages.
@@ -479,3 +479,15 @@ See:
 
 * https://gohugo.io/variables/page/
 * https://gohugo.io/getting-started/configuration/#configure-dates
+
+### How to set the content summaries
+
+I noticed that the content summaries where too long.
+
+There three summary splitting options:
+
+- By default, Hugo automatically takes the first 70 words of your content as its summary and stores it into the .Summary page variable for use in your templates.
+- Alternatively, you may add the `<!--more-->` summary divider where you want to split the article.
+- You might want your summary to be something other than the text that starts the article. In this case you can provide a separate summary in the summary variable of the article front matter.
+
+See: https://gohugo.io/content-management/summaries/
