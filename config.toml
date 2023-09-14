@@ -7,11 +7,13 @@ theme = 'binario'
   name = "Darshaka Pathirana"
 
 [Params]
-  description = "Problems need to be solved. Solutions need to be shared." # Site Description. Used in meta description
+  copyright = "Share Your Knowledge by @jkirk (Darshaka Pathirana)"
+  description = "Problems need to be solved. Solutions should be shared." # Site Description. Used in meta description
+  subtitle = "Problems need to be solved. Solutions should be shared." # Site subtitle. Used in customr footer
   schema = true # Enable Schema
   columns = 1 # Set the number of cards columns. Possible values: 1, 2, 3
   dateFormat = "2006-01-02" # Change the format of dates
-  authorbox = true # Show authorbox at bottom of single pages if true
+  authorbox = false # Show authorbox at bottom of single pages if true
   related = true # Enable Related content for single pages
   relatedMax = 5 # Set the maximum number of elements that can be displayed in related block. Optional
   hideNoPostsWarning = false # Don't show no posts empty state warning in main page, if true

@@ -2,6 +2,7 @@
 title: "How to deploy a Hugo Site as GitHub Page"
 created: 2023-08-02T00:12:17+0200
 date: 2023-08-08T17:31:59+0200
+modified: 2023-09-15T00:59:02+0200
 ---
 
 A couple of years ago, I found a tutorial that showed how to use [Jekyll](https://jekyllrb.com/) to set up GitHub pages.
@@ -441,8 +442,40 @@ I did not use it for this post, but I stumbled across this links, which may come
 While releasing the page, I had to write a descrtiption for my blog.
 I choose:
 
-> "Problems need to be solved. Solutions need to be shared."
+> "Problems need to be solved. Solutions should be shared."
 
-Now I wanted this line to be added below the title.
+I wanted this line to be added below the title, but in the end decided to put it in the footer above the copyright line.
 
-I still need to look up how to do it.
+I had to override the themes's partial template `footer.html` and added the `Params.Subtitle` into it.
+
+```sh
+  ❯ cp themes/binario/layouts/partials/footer.html layouts/partials/footer.html
+
+
+  ❯ git diff --no-index themes/binario/layouts/partials/footer.html layouts/partials/footer.html
+  diff --git themes/binario/layouts/partials/footer.html layouts/partials/footer.html
+  index 85a9f26..ee6e4f1 100644
+  --- themes/binario/layouts/partials/footer.html
+  +++ layouts/partials/footer.html
+  @@ -1,5 +1,6 @@
+   <footer class="footer">
+          {{- partial "footer_social.html" . }}
+          {{- partial "footer_menu.html" . }}
+  +       <div class="footer__copyright">{{ .Site.Params.Subtitle }}<span class="footer__copyright-credits"></span></div>
+          <div class="footer__copyright">© {{ now.Format "2006" }} {{ .Site.Params.copyright | default .Site.Title }}. <span class="footer__copyright-credits">{{ T "footer_credits" | safeHTML }}</span></div>
+  -</footer>
+  \ No newline at end of file
+  +</footer>
+```
+
+See: https://gohugo.io/templates/partials/
+
+### How to add the last modified date
+
+While modifying this post, I wondered how to add the date of the last modification.
+It was quite simple, I just had to add `modified:` to the page header.
+
+See:
+
+* https://gohugo.io/variables/page/
+* https://gohugo.io/getting-started/configuration/#configure-dates
