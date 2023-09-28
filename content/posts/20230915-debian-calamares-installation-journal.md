@@ -43,7 +43,7 @@ The system was partitioned like this:
 
 First, I wanted to test the Calamres installer's usability.
 
-The first few questions were simple: Location and Keyboard setting:
+The first few questions were simple: Language, Location and Keyboard setting:
 
 ![](Screenshot_20230831_192815.png "Welcome to the Calamares installer for Debian 12 (bookworm)")
 
@@ -51,16 +51,18 @@ The first few questions were simple: Location and Keyboard setting:
 
 ![](Screenshot_20230831_213339.png "Keyboard")
 
-For my first test I choose "Install alongside" and reszied the Windows NTFS partition to about 100GiB:
+For my first installtion test I choose "Install alongside" and reszied the Windows NTFS partition to about 100GiB:
 
 ![Install alongside](Screenshot_20230927_222247.png "Partitions")
+
+Set the names (full name, user name and host name) and a password:
 
 ![](Screenshot_20230831_204359.png "Users")
 
 ![](Screenshot_20230927_224715.png "All done.")
 
-The installation went smooth and after the reboot, Debian booted fine.
-The partition looked like this, Debian was installed into a large ext4 partition:
+The installation went smoothly, and after the reboot, Debian booted fine.
+The partition looked like this, Debian was installed on a large ext4 partition:
 
 ```sh
   Model: SAMSUNG MZVL21T0HDLU-00BLL (nvme)
