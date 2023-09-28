@@ -1,8 +1,7 @@
 ---
 title: "Lenovo ThinkPad X1 Carbon Gen 11: Debian/bookworm Calamares Installation Journal"
 create: 2023-09-15T00:11:06Z
-date: 2023-09-15T02:12:00+0200
-draft: true
+date: 2023-09-28T10:01:51+0200
 ---
 
 tl;dr: Avoid the GUI Installer (Calamares) of Debian Live
