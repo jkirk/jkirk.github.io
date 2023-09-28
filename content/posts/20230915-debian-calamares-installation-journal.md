@@ -122,11 +122,11 @@ After clicking OK, everything was lost:
 
 ![](Screenshot_20230927_234659.png "Partitions - Manual partition V")
 
-So, this also did not work.
+So, this did not work.
 
 ## Calamares installer for Debian 12 (bookworm) - Command Line Partitioning
 
-Before running the installer I decided to manually partition the disk with the good old command line tools.
+As the installer was unable to partition the system to my requirements, I decided to partition the hard drive manually using good old command line tools before running the installer.
 
 I first resized the NTFS partition:
 
@@ -524,4 +524,4 @@ I unmounted boot and efi, unlocked the LUKS partition, mounted the rootfs and ho
 
 But the installation failed again. *sigh*
 
-So I then decided to give up the Calamares installer and use the Debian (netinst)[https://www.debian.org/distrib/netinst] installer.
+I gave up at that point and decided to use the Debian (netinst)[https://www.debian.org/distrib/netinst] installer.
