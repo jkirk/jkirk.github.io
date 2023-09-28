@@ -1,7 +1,7 @@
 ---
 title: "Lenovo ThinkPad X1 Carbon Gen 11: Debian/bookworm Calamares Installation Journal"
 create: 2023-09-15T00:11:06Z
-date: 2023-09-28T10:01:51+0200
+date: 2023-09-28T10:11:45+0200
 ---
 
 tl;dr: Avoid the GUI Installer (Calamares) of Debian Live
@@ -14,7 +14,7 @@ I booted Debian Live 12.1.0 (bookworm) / Cinnamon and tried the Calamares Instal
 My goal was to resize the Windows partition and set up encrypted partition with LVM on top of it.
 This it absolutely did not work for me! 🔥
 
-TODO: A really do not recommend using the installer, there are too many bugs, see: https://bugs.debian.org/cgi-bin/pkgreport.cgi?pkg=calamares;dist=unstable
+A would only recommend using the Calamares installer, for simple installations, see also: https://bugs.debian.org/cgi-bin/pkgreport.cgi?pkg=calamares;dist=unstable
 
 ## Partitioning
 
@@ -39,7 +39,11 @@ The system was partitioned like this:
    4      1022GB  1024GB  2097MB  ntfs         Basic data partition          hidden, diag
 ```
 
-## Calamares installer for Debian 12 (bookworm) - Install alongside
+## Calamares installer for Debian 12 (bookworm) - Install Alongside
+
+First, I wanted to test the Calamres installer's usability.
+
+The first few questions were simple: Location and Keyboard setting:
 
 ![](Screenshot_20230831_192815.png "Welcome to the Calamares installer for Debian 12 (bookworm)")
 
@@ -47,13 +51,15 @@ The system was partitioned like this:
 
 ![](Screenshot_20230831_213339.png "Keyboard")
 
+For my first test I choose "Install alongside" and reszied the Windows NTFS partition to about 100GiB:
+
 ![Install alongside](Screenshot_20230927_222247.png "Partitions")
 
 ![](Screenshot_20230831_204359.png "Users")
 
 ![](Screenshot_20230927_224715.png "All done.")
 
-After the reboot, Debian booted fine.
+The installation went smooth and after the reboot, Debian booted fine.
 The partition looked like this, Debian was installed into a large ext4 partition:
 
 ```sh
