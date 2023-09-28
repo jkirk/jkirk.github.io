@@ -203,8 +203,9 @@ After booting Debian the system looked like this:
     └─nvme0n1p6_crypt        254:0    0 852.7G  0 crypt                       LVM2_member Lve3cl-81fM-XX0z-K5rm-uq4f-DBU0-3wtyUJ
       ├─vg0--predator-rootfs 254:1    0    16G  0 lvm   /                     ext4        68e7372c-ee62-4172-97c1-f71f9a2bfaaa
       └─vg0--predator-home   254:2    0    50G  0 lvm   /home                 ext4        7cdee128-ae26-48e6-af27-89ee98b984f9
+```
 
-Fixed the `/etc/crypptab` problem:
+I fixed the `/etc/crypptab` problem:
 
 ```sh
   jkirk@predator:~$ sudo vi /etc/crypttab
