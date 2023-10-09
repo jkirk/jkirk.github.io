@@ -50,10 +50,9 @@ I wanted to put the Hugo site in a separate `gh-pages-hugo` branch, and so I as 
 
 I am still running Debian/bullseye, which only includes Hugo in version [0.80.0](https://packages.debian.org/bullseye/hugo).
 Debian/bookwork includes Hugo in version [0.111.3](https://packages.debian.org/bookworm/hugo), but my Debian upgrade is still on my to-do list.
-So I decided to use the docker/podman image `hugo:0.111.3-debian` to match the Hugo version in Debian/bookwork to develop the site:
+So I decided to use the docker/podman image `hugo:0.111.3-debian` to match the Hugo version in Debian/bookworm to develop the site:
 
 ```sh
-
   at 2023-08-02 01:32:51 +02:00 ❯ podman pull docker.io/klakegg/hugo:0.111.3-debian
   Trying to pull docker.io/klakegg/hugo:0.111.3-debian...
   Getting image source signatures

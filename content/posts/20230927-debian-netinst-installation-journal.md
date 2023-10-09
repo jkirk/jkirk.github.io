@@ -54,11 +54,11 @@ I was impressed: Applying the pending operations took only 1 minute and 49 secon
 I rebooted the system and tested Windows boot.
 To my surprise Windows booted fine.
 
-FTR,  GParted needs to be installed manually on Debian Live.
+FTR, GParted needs to be installed manually on Debian Live.
 
 ## Partitioning: Prepare Debian partitions
 
-> ℹ️ **Note**: The following partitioning can and most probably should be accomplished with the Debian Installer.
+> ℹ️ **Note**: The following partitioning can - and most probably should - be accomplished with the Debian Installer.
 
 Created the Debian partitions (boot and encrypted LVM):
 
@@ -163,10 +163,9 @@ Booted `debian-12.1.0-amd64-netinst.iso` via Ventoy and started the Graphical De
 ```
 
 * Partition disk: selected rootfs and home
-
 * Finished partitioning and wrote changes to disk
 
-  Swap was recommended (I will create 32GB swap LV later)
+  Swap was recommended (I will create a 32GB swap LV later)
 
 After that the base installation was performed.
 
@@ -179,9 +178,9 @@ After that the base installation was performed.
   * SSH server
   * standard system utilities
 
-After the installation and the reboot, Debian dropped into initramfs shell, with an ALERT that rootfs does not exist:
+After the installation and the reboot, Debian dropped into the initramfs shell, with an ALERT that rootfs does not exist:
 
-I had to unlock partition manually (`cryptsetup open`), because `/etc/crypttab` was not set up on the installation.
+I had to unlock the partition manually (`cryptsetup open`) because `/etc/crypttab` was not set up during installation.
 
 I then pressed Ctrl-d to exit the shell and the system booted fine.
 
@@ -205,7 +204,7 @@ After booting Debian the system looked like this:
       └─vg0--predator-home   254:2    0    50G  0 lvm   /home                 ext4        7cdee128-ae26-48e6-af27-89ee98b984f9
 ```
 
-I fixed the `/etc/crypptab` problem:
+I then fixed the `/etc/crypptab` problem:
 
 ```sh
   jkirk@predator:~$ sudo vi /etc/crypttab
@@ -217,3 +216,29 @@ I fixed the `/etc/crypptab` problem:
   update-initramfs: Generating /boot/initrd.img-6.1.0-12-amd64
   update-initramfs: Generating /boot/initrd.img-6.1.0-10-amd64
 ```
+
+## Questions
+
+### Where are the debian-installer screenshots?
+
+```sh
+❯ ls -l /var/log/installer/*.png
+-rw------- 1 root root 120374 Sep 28 11:49 /var/log/installer/debian-installer_shell-plugin_0.png
+-rw------- 1 root root  65264 Sep 28 11:49 /var/log/installer/finish-install_reboot_in_progress_0.png
+-rw------- 1 root root  82426 Sep 28 11:49 /var/log/installer/localechooser_languagelist_0.png
+-rw------- 1 root root  67859 Sep 28 11:49 /var/log/installer/netcfg_choose_interface_0.png
+-rw------- 1 root root  71363 Sep 28 11:49 /var/log/installer/partman-basicfilesystems_no_swap_0.png
+-rw------- 1 root root  81177 Sep 28 11:49 /var/log/installer/partman_active_partition_0.png
+-rw------- 1 root root 101789 Sep 28 11:49 /var/log/installer/partman_choose_partition_0.png
+-rw------- 1 root root 101660 Sep 28 11:49 /var/log/installer/partman_choose_partition_1.png
+-rw------- 1 root root 110427 Sep 28 11:49 /var/log/installer/partman_choose_partition_2.png
+```
+
+### How to rename the hostname?
+
+* [How to change hostname on Linux - Linux Tutorials - Learn Linux Configuration](https://linuxconfig.org/how-to-change-hostname-on-linux)
+
+### What hostname should I choose?
+
+* [grml random-hostname](https://github.com/grml/grml-scripts/blob/master/usr_bin/random-hostname)
+* [SERVER HOSTNAMES](https://gist.github.com/jkirk/27b6c4f881102cebeea4b4d73f5064d0)
