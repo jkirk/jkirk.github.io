@@ -241,6 +241,7 @@ Did some research:
 The hardware itself seems to be supported:
 
 * Intel XMM7560 LTE Advanced Pro Modem: https://linux-hardware.org/?id=pci:8086-7560-103c-893b
+* L860-GL-16-Leading 5G Wireless Modules & IoT Solutions | Fibocom: https://www.fibocom.com/en/products/LTECat-L860-GL-16.html
 
 Fibocom L860-GL and Intel XMM7560 seem to be the same, but I am not completely sure:
 
@@ -436,3 +437,31 @@ Comment=Custom definition for Firefox
 
 ### SSH config
 
+### Thunderbird
+
+My Thunderbird Profile is more than 10 years old.
+I decided to create a new one from scatch.
+
+I have a *lot* of mail accounts. How to import/export them?
+
+How to install Thunderbird Extensions / Add-ons automatically?
+
+Thunderbird-Addons:
+
+* Copy Message ID :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/copy-message-id/
+* External Editor Revived :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/external-editor-revived/ (+ messaging host: https://github.com/Frederick888/external-editor-revived/wiki/Linux, https://github.com/Frederick888/external-editor-revived/releases)
+* Header Tools Improved :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/header-tools-improved/
+* LookOut (fix version) :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/lookout-fix-version/
+* Simple Mail Redirection :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/simple-mail-redirection/
+* tbkeys-lite :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/tbkeys-lite/
+* Check and Send :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/check-and-send/
+* Correct Identity :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/correct-identity/
+* https://addons.thunderbird.net/en-US/thunderbird/addon/correct-identity/?src=search
+
+See: https://stackoverflow.com/questions/38469757/programatically-install-add-on-supporting-automatic-updates
+
+```
+❯ wget -O tmp.xpi https://addons.thunderbird.net/thunderbird/downloads/latest/simple-mail-redirection/
+❯ ID=$(unzip -p tmp.xpi manifest.json | grep -v "^.*//" | jq -r .applications.gecko.id)
+❯ mv tmp.xpi .thunderbird/gi77x3jn.default-default/extensions/$ID.xpi
+```
