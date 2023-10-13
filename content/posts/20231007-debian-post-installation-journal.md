@@ -354,7 +354,15 @@ See:
 * dconf(1)
 * dconf(7)
 
-### Cinnamon Setting: Diodon
+### Cinnamon Settings: gnome-terminal
+
+Transferred the settings:
+
+```sh
+❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/gnome/terminal/legacy/ | dconf load /org/gnome/terminal/legacy/
+```
+
+### Cinnamon Settings: Diodon
 
 Transferred the settings:
 
@@ -435,33 +443,143 @@ Name=Firefox
 Comment=Custom definition for Firefox
 ```
 
-### SSH config
-
-### Thunderbird
+### Thunderbird: Add-Ons
 
 My Thunderbird Profile is more than 10 years old.
 I decided to create a new one from scatch.
 
-I have a *lot* of mail accounts. How to import/export them?
-
-How to install Thunderbird Extensions / Add-ons automatically?
-
-Thunderbird-Addons:
-
-* Copy Message ID :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/copy-message-id/
-* External Editor Revived :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/external-editor-revived/ (+ messaging host: https://github.com/Frederick888/external-editor-revived/wiki/Linux, https://github.com/Frederick888/external-editor-revived/releases)
-* Header Tools Improved :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/header-tools-improved/
-* LookOut (fix version) :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/lookout-fix-version/
-* Simple Mail Redirection :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/simple-mail-redirection/
-* tbkeys-lite :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/tbkeys-lite/
-* Check and Send :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/check-and-send/
-* Correct Identity :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/correct-identity/
-* https://addons.thunderbird.net/en-US/thunderbird/addon/correct-identity/?src=search
-
-See: https://stackoverflow.com/questions/38469757/programatically-install-add-on-supporting-automatic-updates
+I have a *lot* of mail accounts + identiies. How to import/export them?
 
 ```
+❯ grep -e "mail\.server\.server[0-9]\+\.name" /mnt/jkirk/.thunderbird/bbq2wowx.default/prefs.js | wc -l
+26
+```
+
+```sh
+❯ grep -e "mail\.identity\.id[0-9]\+\.useremail" /mnt/jkirk/.thunderbird/bbq2wowx.default/prefs.js | wc -l
+29
+```
+
+`mail.server` + `mail.identity` are the lines in question. But after some thinking, I decided to not import them, but also start from scatch.
+
+I only changed the following settings:
+
+* Account Settings > Server Settings > Server Settings
+
+  * Check for new messages at startup
+  * Check for new messages every 90 minutes
+
+```
+    user_pref("mail.server.server1.check_new_mail", false);
+    user_pref("mail.server.server1.check_time", 90);
+```
+
+* Account Setting > Server Settings > Junk Settings
+
+  * When new junk messages to > "Junk" folder on dpat@syn-net.org
+
+* End-To-End Encryption
+
+  TODO
+
+* Thunderbird Settings > Privacy & Security > Junk
+
+  * When I mark messages as junk > Move them to the accounts "Junk" folder
+  * Mark messages determeinded to be Junk as read
+  * Enable adaptive junk filter loggin
+
+* How to install Thunderbird Extensions / Add-ons automatically?
+
+### Thunderbird: Add-Ons + Settings
+
+Thunderbird-Addons settings are saved in the storage system based on the Web Storage API: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/storage
+I could not figure out how to export that data and for some Addons I could not even find the local storage.
+
+* Check and Send :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/check-and-send/
+
+  Why: I like some have some checks before I send my mails. The defaults are fine.
+
+* Copy Message ID :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/copy-message-id/
+
+  Adds a button to the message view toolbar to copy the message ID to the clipboard.
+
+* Correct Identity :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/correct-identity/
+
+  Why: TODO
+
+* External Editor Revived :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/external-editor-revived/ (+ messaging host: https://github.com/Frederick888/external-editor-revived/wiki/Linux, https://github.com/Frederick888/external-editor-revived/releases)
+
+  Why: I like to use gVim as my external editor for my emails.
+
+  Set gVim as external editor and set up the messaging host.
+
+* Header Tools Improved :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/header-tools-improved/
+
+  Why: Allows to modify headers and source of messages. I sometimes need to fix "In-Reply" message header.
+* LookOut (fix version) :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/lookout-fix-version/
+
+  Why: LookOut decodes winmail.dat (TNEF encoded) files that may come from a misconfigured Microsoft Exchange server or Outlook user allowing access to the original attachments
+
+* Simple Mail Redirection :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/simple-mail-redirection/
+
+  Why: Allows me to bounce / redirect emails.
+
+* ToggleReplied :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/togglereplied-2/
+
+  Why: I sometimes need to toggle the reply state.
+
+* tbkeys-lite :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/tbkeys-lite/
+
+  Why: I am used to Vim keys and like to use j/k to move to the next/previous message. To mark a junk mail I use capital "J" and added the following line:
+
+  ::
+
+        "J": "cmd:cmd_markAsJunk",
+
+(curretly) not compatible with Thunderbird 115:
+
+* Nostalgy++/ Manage, search and archive emails :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/nostalgy_ng/
+
+I needed to find out how to install add-ons using a script, but there was little to find.
+This was the most promissing, I found: https://stackoverflow.com/questions/38469757/programatically-install-add-on-supporting-automatic-updates
+
+My proof-of-concept script looked like this:
+I used `https://addons.thunderbird.net/thunderbird/downloads/latest/$add-on-name` to download the latest version of the Thunderbird Add-On.
+XPI is just a zip file and inside the zip file there is a manifest.json with its ID either in `.applications.gecko.id` or `.browser_specific_settings.gecko.id` (as learned later).
+
+```sh
 ❯ wget -O tmp.xpi https://addons.thunderbird.net/thunderbird/downloads/latest/simple-mail-redirection/
 ❯ ID=$(unzip -p tmp.xpi manifest.json | grep -v "^.*//" | jq -r .applications.gecko.id)
 ❯ mv tmp.xpi .thunderbird/gi77x3jn.default-default/extensions/$ID.xpi
 ```
+
+```sh
+❯ cat << 'EOF' | while read p; do echo $p; wget -q -O tmp.xpi "https://addons.thunderbird.net/thunderbird/downloads/latest/$p"; ID=$(unzip -p tmp.xpi manifest.json | grep -v "^.*//" | jq -r .applications.gecko.id); echo $ID; mv tmp.xpi ".thunderbird/gi77x3jn.default-default/extensions/${ID}.xpi"; done
+check-and-send
+correct-identity
+external-editor-revived
+lookout-fix-version
+simple-mail-redirection
+EOF
+
+❯ cat << 'EOF' | while read p; do echo $p; wget -q -O tmp.xpi "https://addons.thunderbird.net/thunderbird/downloads/latest/$p"; ID=$(unzip -p tmp.xpi manifest.json | grep -v "^.*//" | jq -r .browser_specific_settings.gecko.id); echo $ID; mv tmp.xpi ".thunderbird/gi77x3jn.default-default/extensions/${ID}.xpi"; done
+tbkeys-lite
+togglereplied-2
+EOF
+```
+
+```sh
+❯ l .thunderbird/gi77x3jn.default-default/extensions
+total 320
+-rw-r--r-- 1 jkirk jkirk 10474 Oct 12 17:12 copy-message-id@j.kahn.xpi
+-rw-r--r-- 1 jkirk jkirk 76887 Feb 10  2023 external-editor-revived@tsundere.moe.xpi
+-rw-r--r-- 1 jkirk jkirk 47572 Jul 20 03:20 lookout@s3_fix_version.xpi
+-rw-r--r-- 1 jkirk jkirk 84619 Aug 16 15:36 simplemailredirection@ggbs.de.xpi
+drwxr-xr-x 3 jkirk jkirk  4096 Oct 12 17:06 staged
+-rw-r--r-- 1 jkirk jkirk 22492 Jul 20 16:36 tbkeys-lite@addons.thunderbird.net.xpi
+-rw-r--r-- 1 jkirk jkirk  9715 Aug 12 19:35 togglereplied@kamens.us.xpi
+-rw-r--r-- 1 jkirk jkirk 30333 Feb 18  2023 {1B0ADFEC-846C-401D-BA54-7842CBD485D4}.xpi
+-rw-r--r-- 1 jkirk jkirk 28377 Jun 19 21:42 {47ef7cc0-2201-11da-8cd6-0800200c9a66}.xpi
+```
+
+### SSH config
