@@ -478,10 +478,6 @@ I only changed the following settings:
 
   * When new junk messages to > "Junk" folder on dpat@syn-net.org
 
-* End-To-End Encryption
-
-  TODO
-
 * Thunderbird Settings > Privacy & Security > Junk
 
   * When I mark messages as junk > Move them to the accounts "Junk" folder
@@ -489,6 +485,136 @@ I only changed the following settings:
   * Enable adaptive junk filter loggin
 
 * How to install Thunderbird Extensions / Add-ons automatically?
+
+### Thunderbird: End-To-End Encryption
+
+Checked my private keys. Some of them are obsolete, so took the one I usually use:
+
+```sh
+❯ gpg -K
+/home/jkirk/.gnupg/pubring.kbx
+------------------------------
+[...]
+sec   rsa4096 2015-01-29 [SC] [expires: 2026-02-13]
+      8DF2271871E57DA5714C8EDE9BB6983DDD81AFEB
+uid           [ultimate] Darshaka Pathirana <dpat@syn-net.org>
+uid           [ultimate] Darshaka Pathirana <d@synpro.solutions>
+uid           [ultimate] Darshaka Pathirana <darshaka.pathirana@synaptic-networks.com>
+uid           [ultimate] Darshaka Pathirana <darshaka.pathirana@synpro.solutions>
+ssb   rsa4096 2015-01-29 [E] [expires: 2026-02-13]
+[...]
+
+❯ gpg --export-secret-keys --armor 8DF2271871E57DA5714C8EDE9BB6983DDD81AFEB > my-secret-keys.asc
+```
+
+* Account Setting > End-To-End Encryption
+
+  Add Key > Import an existing OpenPGP Key > selected `my-secret-keys.asc`
+
+  Checked "Sign unencrypted messages"
+
+  Unchecked "Attach my public key when adding an OpenPGP digital signature"
+
+```sh
+❯ gpg --export --armor > all-public-keys.asc
+```
+
+![This file is too big](screenshot_20231015T013620.png)
+
+Quoting [OpenPGP in Thunderbird - HOWTO and FAQ](https://support.mozilla.org/en-US/kb/openpgp-thunderbird-howto-and-faq):
+
+> However, if you have many keys, you might experience a problem because of a current limitation in Thunderbird.
+> Currently, Thunderbird cannot import a large set of keys in a single step. An attempt to import a file that is bigger than 5 MB will be rejected.
+>
+> You have two options to work around this limitation.
+>
+> The first option is to use a graphical key manager for GnuPG and export your
+> keys into separate files. For example, if all public keys in total have a
+> size of 17 MB, you would have to create 4 files, and select a quarter of
+> public keys for each exported file. This is a bit cumbersome.
+>
+> Alternatively, you could try to use the Enigmail version 2.2.x migration
+> Add-on for importing public keys into Thunderbird, even if you haven't used
+> Enigmail before.
+>
+> [...]
+
+I didn't want to use a "graphical key manager for GnuPG" (which one?).
+
+So I counted the number of public keys in my keyring and created 2 public key files:
+
+```sh
+❯ gpg --list-keys --with-colons | grep pub | wc -l
+70
+
+❯ gpg --list-keys --with-colons | grep pub | cut -f 5 -d : | head -30 | xargs gpg --export --armor > all-public-keys-1.asc
+❯ gpg --list-keys --with-colons | grep pub | cut -f 5 -d : | tail -40 | xargs gpg --export --armor > all-public-keys-2.asc
+❯ ls -l all-public-keys-*
+-rw-r--r-- 1 jkirk jkirk 3588165 Oct 15 02:23 all-public-keys-1.asc
+-rw-r--r-- 1 jkirk jkirk 3973623 Oct 15 02:23 all-public-keys-2.asc
+```
+
+Do you accept these keys for verifiying digital signatures and for encrypting
+messages, for all shown email addresses?
+
+- Not accepted (undecided)
+- Accepted (unverified)
+
+![Accept the key for verififying digital signatures and for ecnrypting messages?](screenshot_20231015T022519.png)
+
+Selecting "Not accepted (undecided) leads to the following "Acceptance":
+
+* Not yet, maybe later
+
+![Key Properties: Not accepted (undecided)](screenshot_20231015T023734.png)
+
+Selecting "Accepted (unverified)" leads to the following "Acceptance":
+
+* Yes, but I have not verified that this is the correct key
+
+I also tried Mikas key, which I have verified and signed a while ago:
+
+```sh
+❯ gpg --edit-key 33CCB136401AFEC843A3876396A87872B7EA3737
+gpg (GnuPG) 2.2.40; Copyright (C) 2022 g10 Code GmbH
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+
+
+pub  rsa4096/96A87872B7EA3737
+     created: 2010-07-14  expires: 2025-10-01  usage: SC
+     trust: full          validity: unknown
+sub  rsa4096/257B6FD52892CF7E
+     created: 2010-07-14  expires: never       usage: E
+sub  rsa4096/43A1FB9BCC87C963
+     created: 2018-07-26  expires: 2025-10-01  usage: A
+[ unknown] (1). Michael Prokop <mail@michael-prokop.at>
+[ unknown] (2)  Michael Prokop <mika@grml.org>
+[ unknown] (3)  Michael Prokop <mika@debian.org>
+[ revoked] (4)  Michael Prokop <michael@linuxtage.at>
+[ unknown] (5)  Michael Prokop <prokop@grml-solutions.com>
+[ unknown] (6)  Michael Prokop <michael.prokop@synpro.solutions>
+
+❯ gpg --check-sigs 33CCB136401AFEC843A3876396A87872B7EA3737 | grep dpat
+sig!1        9BB6983DDD81AFEB 2015-10-19  Darshaka Pathirana <dpat@syn-net.org>
+sig!1        9BB6983DDD81AFEB 2015-10-19  Darshaka Pathirana <dpat@syn-net.org>
+sig!1        9BB6983DDD81AFEB 2015-10-19  Darshaka Pathirana <dpat@syn-net.org>
+sig!1        9BB6983DDD81AFEB 2015-10-19  Darshaka Pathirana <dpat@syn-net.org>
+sig!3 L      9BB6983DDD81AFEB 2015-10-19  Darshaka Pathirana <dpat@syn-net.org>
+gpg: 98 good signatures
+gpg: 250 signatures not checked due to missing keys
+```
+
+To Thunderbird importer does not take into account that I have already verfied the key.
+
+I decided to not invest any further energy on this.
+The Thunderbird OpenGPG key ring will only be my secondary store, so I will set all imported keys to "Accepted (unverified)" until I notice problems.
+
+See:
+
+* https://support.mozilla.org/en-US/kb/thunderbird-help-setup-account-e2ee#w_your-own-openpgp-configuration
+* https://support.mozilla.org/en-US/kb/protect-your-thunderbird-passwords-primary-password
+* help understanding gpg --list--keys output - Unix & Linux Stack Exchange: https://unix.stackexchange.com/questions/613839/help-understanding-gpg-list-keys-output
 
 ### Thunderbird: Add-Ons + Settings
 
