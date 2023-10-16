@@ -496,7 +496,16 @@ command='/usr/bin/diodon'
 name='Diodon'
 ```
 
-### Cinnamon Theme
+### Cinnamon Settings: Windows / Alt-Tab
+
+Changed the Alt-Tab switcher style from "Icons and thumbnails" to "Icons and window preview"
+
+```
+  ❯ dconf read /org/cinnamon/alttab-switcher-style
+  'icons+preview'
+```
+
+### Cinnamon Settings: Theme
 
 ![](screenshot_20231007T160540.png "Default Theme of GNOME Terminal")
 
@@ -561,7 +570,7 @@ Transferred the settings file
 
 One also have to copy `.mozilla/native-messaging-hosts` or "Enable browser integration" for Firefox in KeePassXC > Browser Integration.
 
-### Thunderbird: Add-Ons
+### Thunderbird: Profiles + Settings
 
 My Thunderbird Profile is more than 10 years old.
 I decided to create a new one from scatch.
@@ -596,6 +605,7 @@ user_pref("mail.server.server1.check_time", 90);
 
   * When new junk messages to > "Junk" folder on dpat@syn-net.org
 
+* Thunderbird Settings > General > Default Search Engine: DuckDuckGo
 * Thunderbird Settings > Privacy & Security > Junk
 
   * When I mark messages as junk > Move them to the accounts "Junk" folder
@@ -609,20 +619,20 @@ user_pref("mail.server.server1.check_time", 90);
 Checked my private keys. Some of them are obsolete, so took the one I usually use:
 
 ```sh
-❯ gpg -K
-/home/jkirk/.gnupg/pubring.kbx
-------------------------------
-[...]
-sec   rsa4096 2015-01-29 [SC] [expires: 2026-02-13]
-      8DF2271871E57DA5714C8EDE9BB6983DDD81AFEB
-uid           [ultimate] Darshaka Pathirana <dpat@syn-net.org>
-uid           [ultimate] Darshaka Pathirana <d@synpro.solutions>
-uid           [ultimate] Darshaka Pathirana <darshaka.pathirana@synaptic-networks.com>
-uid           [ultimate] Darshaka Pathirana <darshaka.pathirana@synpro.solutions>
-ssb   rsa4096 2015-01-29 [E] [expires: 2026-02-13]
-[...]
+  ❯ gpg -K
+  /home/jkirk/.gnupg/pubring.kbx
+  ------------------------------
+  [...]
+  sec   rsa4096 2015-01-29 [SC] [expires: 2026-02-13]
+        8DF2271871E57DA5714C8EDE9BB6983DDD81AFEB
+  uid           [ultimate] Darshaka Pathirana <dpat@syn-net.org>
+  uid           [ultimate] Darshaka Pathirana <d@synpro.solutions>
+  uid           [ultimate] Darshaka Pathirana <darshaka.pathirana@synaptic-networks.com>
+  uid           [ultimate] Darshaka Pathirana <darshaka.pathirana@synpro.solutions>
+  ssb   rsa4096 2015-01-29 [E] [expires: 2026-02-13]
+  [...]
 
-❯ gpg --export-secret-keys --armor 8DF2271871E57DA5714C8EDE9BB6983DDD81AFEB > my-secret-keys.asc
+  ❯ gpg --export-secret-keys --armor 8DF2271871E57DA5714C8EDE9BB6983DDD81AFEB > my-secret-keys.asc
 ```
 
 * Account Setting > End-To-End Encryption
@@ -760,6 +770,12 @@ I could not figure out how to export that data and for some Addons I could not e
   Why: I like to use gVim as my external editor for my emails.
 
   Set gVim as external editor and set up the messaging host.
+
+```
+user_pref("mail.wrap_long_lines", false);
+user_pref("mailnews.send_plaintext_flowed", false);
+user_pref("mailnews.wraplength", 0);
+```
 
 * Header Tools Improved :: Add-ons for Thunderbird: https://addons.thunderbird.net/en-US/thunderbird/addon/header-tools-improved/
 
@@ -1081,5 +1097,44 @@ Oct 15 22:47:26 tranquility boltd[1119]: probing: timeout, done: [2788086] (2000
 ```
 
 First went offline, then started Signal and after everything looked fine, went online.
+
+### Autokey
+
+```sh
+❯ cp -a /mnt/jkirk/.config/autokey .config
+```
+
+### gnome-screenshot
+
+Better screenshot filename
+
+```
+❯ dconf dump /org/cinnamon/desktop/keybindings/custom-keybindings/custom3/
+[/]
+binding=['<Shift>Print']
+command='/home/jkirk/bin/screen-upload.sh -o'
+name='screenshot area with better filename'
+```
+
+```
+❯ dconf dump /org/cinnamon/desktop/keybindings/media-keys/
+[/]
+area-screenshot=@as []
+
+~
+at 2023-10-16 11:21:01 +02:00 ❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/cinnamon/desktop/keybindings/media-keys/
+[/]
+area-screenshot=@as []
+calculator=['XF86Calculator']
+next=['XF86AudioNext']
+pause=['AudioStop']
+play=['AudioPlay']
+previous=['XF86AudioPrev']
+screensaver=['XF86ScreenSaver', '<Primary><Shift><Alt>l']
+search=['XF86Search']
+stop=@as []
+suspend=['XF86Sleep']
+window-screenshot=['<Alt>Print']
+```
 
 ### SSH config
