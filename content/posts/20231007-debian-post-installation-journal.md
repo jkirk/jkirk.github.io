@@ -159,6 +159,100 @@ mode=infrastructure
 ssid=home.syn-net.org
 ```
 
+## NetworkManager DNS + VPN
+
+Wireguard works out of the box, it does not need a network manager plugin to import the wireguard profile:
+
+```
+❯ nmcli connection import type wireguard file wireguard/wg-hetzner.conf
+Connection 'wg-hetzner' (a7755f75-af8e-4cd9-965b-e0ea2410c9af) successfully added.
+```
+
+See: https://blogs.gnome.org/thaller/2019/03/15/wireguard-in-networkmanager/
+
+I use different DNS servers for different VPNs.
+I.e. I used the "internal" DNS server for my "internal" VMs on the Hetzner server.
+For that I had a dnsmasq configuration like this:
+
+```sh
+❯ sudo cp -a /mnt/etc/NetworkManager/dnsmasq.d/helios.conf /etc/NetworkManager/dnsmasq.d/hetzner.conf
+❯ cat /etc/NetworkManager/dnsmasq.d/hetzner.conf
+server=/h2.syn-net.org/10.10.1.1
+```
+
+I decided to try the dns setting in NetworkManager WireGuard profile:
+
+```sh
+❯ nmcli c modify wg-hetzner ipv4.dns 10.10.1.1
+
+❯ nmcli c show wg-hetzner | grep ipv4.dns:
+ipv4.dns:                               10.10.1.1
+```
+
+TODO: This could leak the VPN domain name to the external DNS server and or external queries to the VPN DNS server.
+
+Tried to import the OpenVPN setting:
+
+```sh
+❯ nmcli connection import type openvpn file tmp/openvpn/myopenvpn.conf
+Error: failed to import 'tmp/openvpn/myopenvpn.conf': configuration error: unsupported 1th argument remote_host to “route” (line 6).
+
+❯ grep "route " tmp/openvpn/myopenvpn.conf
+route remote_host 255.255.255.255 net_gateway
+````
+
+Removed the line in question. Its a bug in network-manager: https://bugs.launchpad.net/ubuntu/+source/network-manager-openvpn/+bug/606365/comments/68 + https://askubuntu.com/a/1013116
+
+```sh
+❯ nmcli connection import type openvpn file tmp/openvpn/myopenvpn.conf
+Connection 'myopenvpn' (62875c23-aadf-4d1c-896c-65e14cdb9a5e) successfully added.
+````
+
+I had to set the VPN password:
+
+```sh
+❯ nmcli c show --show-secrets myopenvpn | grep vpn.secret
+vpn.secrets:                            password = [SNIP]
+```
+
+
+There still was problem with the connection:
+
+```
+Oct 16 09:08:20 tranquility nm-openvpn[86980]: VERIFY ERROR: depth=0, error=CA signature digest algorithm too weak: C=at, [SNIP]
+Oct 16 09:08:20 tranquility nm-openvpn[86980]: OpenSSL: error:0A000086:SSL routines::certificate verify failed
+Oct 16 09:08:20 tranquility nm-openvpn[86980]: TLS_ERROR: BIO read tls_read_plaintext error
+Oct 16 09:08:20 tranquility nm-openvpn[86980]: TLS Error: TLS object -> incoming plaintext read error
+Oct 16 09:08:20 tranquility nm-openvpn[86980]: TLS Error: TLS handshake failed
+Oct 16 09:08:20 tranquility nm-openvpn[86980]: Fatal TLS error (check_tls_errors_co), restarting
+```
+
+In Network Setting > VPN connection myopenvpn > Identiy > Advanced > TLS Authentication > Additional TLS authentication or encryption
+
+* TLS cipher string: DEFAULT:@SECLEVEL=0
+
+See: https://superuser.com/a/1737054
+
+Then disabled autoconnect + "use this connection only for resources on its network":
+
+```sh
+❯ nmcli c modify myopenvpn connection.autoconnect no
+❯ nmcli c modify myopenvpn ipv4.never-default yes
+```
+
+### NetworkManager Auto Connection:
+
+Check auto-connection:
+
+```sh
+❯ nmcli c show wg-hetzner | grep connection.autoconnect:
+connection.autoconnect:                 yes
+```
+
+I noticed that the VPN DNS take priority over the globally set on.
+But if multiple VPN connections are enabled, the order from which they are started makes a difference.
+I will have to investigate the "ipv4.dns-priority" setting.
+
 ## NetworkManager Mobile Broadband
 
 I tried to setup Mobile Broadband but the NetworkManager bug seems still to exist:
@@ -354,6 +448,20 @@ See:
 * dconf(1)
 * dconf(7)
 
+### Cinnamon Keyboard Settings
+
+```sh
+❯ dconf dump /org/gnome/libgnomekbd/keyboard/
+[/]
+layouts=['us\taltgr-intl', 'at\tnodeadkeys', 'us']
+options=['grp\tgrp:shift_caps_toggle']
+
+❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/gnome/libgnomekbd/keyboard/
+[/]
+layouts=['us\taltgr-intl', 'at\tnodeadkeys', 'us']
+options=['grp\tgrp:shift_caps_toggle']
+```
+
 ### Cinnamon Settings: gnome-terminal
 
 Transferred the settings:
@@ -443,6 +551,16 @@ Name=Firefox
 Comment=Custom definition for Firefox
 ```
 
+### Firefoxx + KeepassXC
+
+Transferred the settings file
+
+```sh
+❯ cp -a /mnt/jkirk/.config/keepassxc .config
+```
+
+One also have to copy `.mozilla/native-messaging-hosts` or "Enable browser integration" for Firefox in KeePassXC > Browser Integration.
+
 ### Thunderbird: Add-Ons
 
 My Thunderbird Profile is more than 10 years old.
@@ -470,8 +588,8 @@ I only changed the following settings:
   * Check for new messages every 90 minutes
 
 ```
-    user_pref("mail.server.server1.check_new_mail", false);
-    user_pref("mail.server.server1.check_time", 90);
+user_pref("mail.server.server1.check_new_mail", false);
+user_pref("mail.server.server1.check_time", 90);
 ```
 
 * Account Setting > Server Settings > Junk Settings
@@ -613,8 +731,12 @@ The Thunderbird OpenGPG key ring will only be my secondary store, so I will set 
 See:
 
 * https://support.mozilla.org/en-US/kb/thunderbird-help-setup-account-e2ee#w_your-own-openpgp-configuration
-* https://support.mozilla.org/en-US/kb/protect-your-thunderbird-passwords-primary-password
+* https://support.mozilla.org/en-US/kb/openpgp-thunderbird-howto-and-faq#w_what-does-key-acceptance-mean
 * help understanding gpg --list--keys output - Unix & Linux Stack Exchange: https://unix.stackexchange.com/questions/613839/help-understanding-gpg-list-keys-output
+
+TODO: primary password
+
+* https://support.mozilla.org/en-US/kb/protect-your-thunderbird-passwords-primary-password
 
 ### Thunderbird: Add-Ons + Settings
 
@@ -707,5 +829,257 @@ drwxr-xr-x 3 jkirk jkirk  4096 Oct 12 17:06 staged
 -rw-r--r-- 1 jkirk jkirk 30333 Feb 18  2023 {1B0ADFEC-846C-401D-BA54-7842CBD485D4}.xpi
 -rw-r--r-- 1 jkirk jkirk 28377 Jun 19 21:42 {47ef7cc0-2201-11da-8cd6-0800200c9a66}.xpi
 ```
+
+To enable external editor reviewed, the native messaging host needs to be installed: https://github.com/Frederick888/external-editor-revived/wiki/Linux
+
+Downloded the lastest `ubuntu-latest-gnu-native-messaging-host-vX.Y.Z.zip` to my scripts directory and run
+
+```sh
+❯ external-editor-revived | tee "$HOME/.mozilla/native-messaging-hosts/external_editor_revived.json"
+Please create 'external_editor_revived.json' manifest file with the JSON below.
+Consult https://wiki.mozilla.org/WebExtensions/Native_Messaging for its location.
+
+{
+  "name": "external_editor_revived",
+  "description": "Edit emails in external editors such as Vim, Neovim, Emacs, etc.",
+  "path": "/home/jkirk/projects/scripts/external-editor-revived",
+  "type": "stdio",
+  "allowed_extensions": [
+    "external-editor-revived@tsundere.moe"
+  ]
+}
+```
+
+### gnote
+
+```sh
+❯ cp -a /mnt/jkirk/.config/gnote .config
+❯ cp -a /mnt/jkirk/.local/share/gnote .local/share/
+```
+
+### Time Zone
+
+Somehow the time (zone) changed after I suspended the the system.
+The system time was off 2 hours after I woke up my system.
+
+```
+Oct 15 19:50:42 tranquility systemd-logind[1066]: The system will suspend now!
+Oct 15 19:50:42 tranquility NetworkManager[1090]: <info>  [1697392242.5012] manager: sleep: sleep requested (sleeping: no  enabled: yes)
+Oct 15 19:50:42 tranquility NetworkManager[1090]: <info>  [1697392242.5013] device (p2p-dev-wlp0s20f3): state change: disconnected -> unmanaged (reason 'sleeping', sys-iface-state: 'managed')
+Oct 15 19:50:42 tranquility ModemManager[1116]: <info>  [sleep-monitor-systemd] system is about to suspend
+Oct 15 19:50:42 tranquility NetworkManager[1090]: <info>  [1697392242.5019] device (wwan0mbim0): state change: disconnected -> unmanaged (reason 'sleeping', sys-iface-state: 'managed')
+Oct 15 19:50:42 tranquility NetworkManager[1090]: <info>  [1697392242.5022] manager: NetworkManager state is now ASLEEP
+Oct 15 19:50:42 tranquility NetworkManager[1090]: <info>  [1697392242.5024] device (wlp0s20f3): state change: activated -> deactivating (reason 'sleeping', sys-iface-state: 'managed')
+Oct 15 19:50:42 tranquility dbus-daemon[1061]: [system] Activating via systemd: service name='org.freedesktop.nm_dispatcher' unit='dbus-org.freedesktop.nm-dispatcher.service' requested by ':1.11' (uid=0 pid=1090 comm="/usr/sbin/NetworkManager --no-daemon")
+Oct 15 19:50:42 tranquility systemd[1]: Starting NetworkManager-dispatcher.service - Network Manager Script Dispatcher Service...
+Oct 15 19:50:42 tranquility dbus-daemon[1061]: [system] Successfully activated service 'org.freedesktop.nm_dispatcher'
+Oct 15 19:50:42 tranquility systemd[1]: Started NetworkManager-dispatcher.service - Network Manager Script Dispatcher Service.
+Oct 15 19:50:42 tranquility kernel: wlp0s20f3: deauthenticating from 36:e5:06:bd:99:85 by local choice (Reason: 3=DEAUTH_LEAVING)
+Oct 15 19:50:42 tranquility wpa_supplicant[1094]: wlp0s20f3: CTRL-EVENT-DISCONNECTED bssid=36:e5:06:bd:99:85 reason=3 locally_generated=1
+Oct 15 19:50:42 tranquility wpa_supplicant[1094]: wlp0s20f3: CTRL-EVENT-DSCP-POLICY clear_all
+Oct 15 19:50:42 tranquility NetworkManager[1090]: <info>  [1697392242.6825] device (wlp0s20f3): supplicant interface state: completed -> disconnected
+Oct 15 19:50:42 tranquility NetworkManager[1090]: <info>  [1697392242.6829] device (wlp0s20f3): state change: deactivating -> disconnected (reason 'sleeping', sys-iface-state: 'managed')
+Oct 15 19:50:42 tranquility avahi-daemon[1052]: Withdrawing address record for fe80::bdc:8647:82c1:144e on wlp0s20f3.
+Oct 15 19:50:42 tranquility avahi-daemon[1052]: Leaving mDNS multicast group on interface wlp0s20f3.IPv6 with address fe80::bdc:8647:82c1:144e.
+Oct 15 19:50:42 tranquility avahi-daemon[1052]: Interface wlp0s20f3.IPv6 no longer relevant for mDNS.
+Oct 15 19:50:42 tranquility NetworkManager[1090]: <info>  [1697392242.7128] dhcp4 (wlp0s20f3): canceled DHCP transaction
+Oct 15 19:50:42 tranquility NetworkManager[1090]: <info>  [1697392242.7129] dhcp4 (wlp0s20f3): activation: beginning transaction (timeout in 45 seconds)
+Oct 15 19:50:42 tranquility NetworkManager[1090]: <info>  [1697392242.7129] dhcp4 (wlp0s20f3): state changed no lease
+Oct 15 19:50:42 tranquility avahi-daemon[1052]: Interface wlp0s20f3.IPv4 no longer relevant for mDNS.
+Oct 15 19:50:42 tranquility avahi-daemon[1052]: Leaving mDNS multicast group on interface wlp0s20f3.IPv4 with address 192.168.43.56.
+Oct 15 19:50:42 tranquility avahi-daemon[1052]: Withdrawing address record for 192.168.43.56 on wlp0s20f3.
+Oct 15 19:50:42 tranquility NetworkManager[1090]: <info>  [1697392242.7497] device (wlp0s20f3): set-hw-addr: set MAC address to D6:3D:19:16:AA:FE (scanning)
+Oct 15 19:50:42 tranquility avahi-daemon[1052]: Joining mDNS multicast group on interface wlp0s20f3.IPv4 with address 192.168.43.56.
+Oct 15 19:50:42 tranquility avahi-daemon[1052]: New relevant interface wlp0s20f3.IPv4 for mDNS.
+Oct 15 19:50:42 tranquility avahi-daemon[1052]: Registering new address record for 192.168.43.56 on wlp0s20f3.IPv4.
+Oct 15 19:50:42 tranquility avahi-daemon[1052]: Withdrawing address record for 192.168.43.56 on wlp0s20f3.
+Oct 15 19:50:42 tranquility avahi-daemon[1052]: Leaving mDNS multicast group on interface wlp0s20f3.IPv4 with address 192.168.43.56.
+Oct 15 19:50:42 tranquility avahi-daemon[1052]: Interface wlp0s20f3.IPv4 no longer relevant for mDNS.
+Oct 15 19:50:42 tranquility NetworkManager[1090]: <info>  [1697392242.8293] device (wlp0s20f3): state change: disconnected -> unmanaged (reason 'sleeping', sys-iface-state: 'managed')
+Oct 15 19:50:43 tranquility NetworkManager[1090]: <info>  [1697392243.0708] device (wlp0s20f3): set-hw-addr: reset MAC address to F4:3B:D8:A9:F0:97 (unmanage)
+Oct 15 19:50:43 tranquility systemd[1]: Reached target sleep.target - Sleep.
+Oct 15 19:50:43 tranquility systemd[1]: Starting syncthing-resume.service - Restart Syncthing after resume...
+Oct 15 19:50:43 tranquility systemd[1]: Starting systemd-suspend.service - System Suspend...
+Oct 15 19:50:43 tranquility wpa_supplicant[1094]: p2p-dev-wlp0s20: CTRL-EVENT-DSCP-POLICY clear_all
+Oct 15 19:50:43 tranquility wpa_supplicant[1094]: p2p-dev-wlp0s20: CTRL-EVENT-DSCP-POLICY clear_all
+Oct 15 19:50:43 tranquility wpa_supplicant[1094]: nl80211: deinit ifname=p2p-dev-wlp0s20 disabled_11b_rates=0
+Oct 15 19:50:43 tranquility systemd-sleep[64469]: Entering sleep state 'suspend'...
+Oct 15 19:50:43 tranquility kernel: PM: suspend entry (s2idle)
+Oct 15 19:50:43 tranquility kernel: Filesystems sync: 0.008 seconds
+Oct 15 19:50:43 tranquility kernel: (NULL device *): firmware: direct-loading firmware i915/adlp_dmc_ver2_16.bin
+Oct 15 19:50:43 tranquility kernel: (NULL device *): firmware: direct-loading firmware regulatory.db
+Oct 15 19:50:43 tranquility kernel: (NULL device *): firmware: direct-loading firmware i915/adlp_guc_70.bin
+Oct 15 19:50:43 tranquility kernel: (NULL device *): firmware: direct-loading firmware iwlwifi-so-a0-gf-a0.pnvm
+Oct 15 19:50:43 tranquility kernel: (NULL device *): firmware: direct-loading firmware intel/ibt-0040-0041.ddc
+Oct 15 19:50:43 tranquility kernel: (NULL device *): firmware: direct-loading firmware regulatory.db.p7s
+Oct 15 19:50:43 tranquility kernel: (NULL device *): firmware: direct-loading firmware intel/sof-tplg/sof-hda-generic-4ch.tplg
+Oct 15 19:50:43 tranquility kernel: (NULL device *): firmware: direct-loading firmware i915/tgl_huc.bin
+Oct 15 22:47:12 tranquility kernel: (NULL device *): firmware: direct-loading firmware intel/ibt-0040-0041.sfi
+Oct 15 22:47:12 tranquility kernel: (NULL device *): firmware: direct-loading firmware iwlwifi-so-a0-gf-a0-72.ucode
+Oct 15 22:47:12 tranquility kernel: Freezing user space processes
+Oct 15 22:47:12 tranquility kernel: Freezing user space processes completed (elapsed 0.031 seconds)
+Oct 15 22:47:12 tranquility kernel: OOM killer disabled.
+Oct 15 22:47:12 tranquility kernel: Freezing remaining freezable tasks
+Oct 15 22:47:12 tranquility kernel: Freezing remaining freezable tasks completed (elapsed 0.002 seconds)
+Oct 15 22:47:12 tranquility kernel: printk: Suspending console(s) (use no_console_suspend to debug)
+Oct 15 22:47:12 tranquility kernel: ACPI: EC: interrupt blocked
+Oct 15 22:47:12 tranquility kernel: typec port1-partner: PM: parent port1 should not be sleeping
+Oct 15 22:47:12 tranquility kernel: ACPI: EC: interrupt unblocked
+Oct 15 22:47:12 tranquility kernel: i915 0000:00:02.0: [drm] GuC firmware i915/adlp_guc_70.bin version 70.5.1
+Oct 15 22:47:12 tranquility kernel: i915 0000:00:02.0: [drm] HuC firmware i915/tgl_huc.bin version 7.9.3
+Oct 15 22:47:12 tranquility kernel: nvme nvme0: Shutdown timeout set to 10 seconds
+Oct 15 22:47:12 tranquility kernel: nvme nvme0: 12/0/0 default/read/poll queues
+Oct 15 22:47:12 tranquility kernel: i915 0000:00:02.0: [drm] HuC authenticated
+Oct 15 22:47:12 tranquility kernel: i915 0000:00:02.0: [drm] GuC submission enabled
+Oct 15 22:47:12 tranquility kernel: i915 0000:00:02.0: [drm] GuC SLPC enabled
+Oct 15 22:47:12 tranquility kernel: i915 0000:00:02.0: [drm] GuC RC: enabled
+Oct 15 22:47:12 tranquility kernel: thinkpad_acpi: undocked from hotplug port replicator
+Oct 15 22:47:12 tranquility kernel: mei_hdcp 0000:00:16.0-b638ab7e-94e2-4ea2-a552-d1c54b627f04: bound 0000:00:02.0 (ops i915_hdcp_component_ops [i915])
+Oct 15 22:47:12 tranquility kernel: OOM killer enabled.
+Oct 15 22:47:12 tranquility kernel: Restarting tasks ...
+Oct 15 22:47:12 tranquility kernel: usb 1-6: USB disconnect, device number 15
+Oct 15 22:47:12 tranquility wpa_supplicant[1094]: wlp0s20f3: CTRL-EVENT-DSCP-POLICY clear_all
+Oct 15 22:47:12 tranquility kernel: done.
+Oct 15 22:47:12 tranquility kernel: random: crng reseeded on system resumption
+Oct 15 22:47:12 tranquility systemd[1]: anacron.service - Run anacron jobs was skipped because of an unmet condition check (ConditionACPower=true).
+Oct 15 22:47:12 tranquility systemd[1]: syncthing-resume.service: Deactivated successfully.
+Oct 15 22:47:12 tranquility systemd[1]: Finished syncthing-resume.service - Restart Syncthing after resume.
+Oct 15 22:47:12 tranquility wpa_supplicant[1094]: wlp0s20f3: CTRL-EVENT-DSCP-POLICY clear_all
+Oct 15 22:47:12 tranquility wpa_supplicant[1094]: nl80211: deinit ifname=wlp0s20f3 disabled_11b_rates=0
+Oct 15 22:47:12 tranquility kernel: usb 1-6: new full-speed USB device number 16 using xhci_hcd
+Oct 15 22:47:12 tranquility dbus-daemon[1061]: [system] Activating via systemd: service name='org.freedesktop.PackageKit' unit='packagekit.service' requested by ':1.72' (uid=1000 pid=1862 comm="/usr/bin/gnome-software --gapplication-service")
+Oct 15 22:47:12 tranquility systemd-sleep[64469]: System returned from sleep state.
+Oct 15 22:47:12 tranquility kernel: PM: suspend exit
+Oct 15 22:47:12 tranquility bluetoothd[1054]: Controller resume with wake event 0x0
+Oct 15 22:47:12 tranquility systemd[1]: Starting packagekit.service - PackageKit Daemon...
+Oct 15 22:47:12 tranquility systemd[1]: systemd-suspend.service: Deactivated successfully.
+Oct 15 22:47:12 tranquility systemd[1]: Finished systemd-suspend.service - System Suspend.
+Oct 15 22:47:12 tranquility systemd[1]: Stopped target sleep.target - Sleep.
+Oct 15 22:47:12 tranquility systemd[1]: Reached target suspend.target - Suspend.
+Oct 15 22:47:12 tranquility systemd[1]: Stopped target suspend.target - Suspend.
+```
+
+Note, that I connect my notebook to the Thunderbolt Docking Station for the first time and turned it of at about 20:47 CEST.
+
+I checked the time zone setting:
+
+```sh
+❯ timedatectl
+               Local time: Sun 2023-10-15 23:04:43 CEST
+           Universal time: Sun 2023-10-15 21:04:43 UTC
+                 RTC time: Sun 2023-10-15 21:04:43
+                Time zone: Europe/Vienna (CEST, +0200)
+System clock synchronized: no
+              NTP service: active
+          RTC in local TZ: yes
+
+Warning: The system is configured to read the RTC time in the local time zone.
+         This mode cannot be fully supported. It will create various problems
+         with time zone changes and daylight saving time adjustments. The RTC
+         time is never updated, it relies on external facilities to maintain it.
+         If at all possible, use RTC in UTC by calling
+         'timedatectl set-local-rtc 0'.
+```
+
+and fixed it with:
+
+```sh
+❯ timedatectl
+               Local time: Sun 2023-10-15 21:08:37 CEST
+           Universal time: Sun 2023-10-15 19:08:37 UTC
+                 RTC time: Sun 2023-10-15 21:08:37
+                Time zone: Europe/Vienna (CEST, +0200)
+System clock synchronized: no
+              NTP service: active
+          RTC in local TZ: yes
+
+Warning: The system is configured to read the RTC time in the local time zone.
+         This mode cannot be fully supported. It will create various problems
+         with time zone changes and daylight saving time adjustments. The RTC
+         time is never updated, it relies on external facilities to maintain it.
+         If at all possible, use RTC in UTC by calling
+         'timedatectl set-local-rtc 0'.
+```
+
+I could not figure why this happened, systemd-timesyncd did not log anything special:
+
+```sh
+❯ sudo journalctl -u systemd-timesyncd.service --boot
+Oct 12 10:53:23 tranquility systemd[1]: Starting systemd-timesyncd.service - Network Time Synchronization...
+Oct 12 10:53:23 tranquility systemd-timesyncd[1018]: The system is configured to read the RTC time in the local time zone. This mode cannot be fully supported. All system time to RTC updates are disabled.
+Oct 12 10:53:23 tranquility systemd[1]: Started systemd-timesyncd.service - Network Time Synchronization.
+Oct 12 10:53:48 tranquility systemd-timesyncd[1018]: Contacted time server 162.159.200.1:123 (2.debian.pool.ntp.org).
+Oct 12 10:53:48 tranquility systemd-timesyncd[1018]: Initial clock synchronization to Thu 2023-10-12 10:53:48.853215 CEST.
+Oct 12 16:55:42 tranquility systemd-timesyncd[1018]: Contacted time server 185.119.117.217:123 (0.debian.pool.ntp.org).
+Oct 13 21:19:42 tranquility systemd-timesyncd[1018]: Contacted time server 37.252.188.90:123 (0.debian.pool.ntp.org).
+Oct 14 00:05:47 tranquility systemd-timesyncd[1018]: Contacted time server 144.76.197.108:123 (0.debian.pool.ntp.org).
+Oct 14 15:15:58 tranquility systemd-timesyncd[1018]: Contacted time server 91.206.8.34:123 (0.debian.pool.ntp.org).
+Oct 14 16:37:10 tranquility systemd-timesyncd[1018]: Contacted time server 131.130.251.107:123 (0.debian.pool.ntp.org).
+Oct 15 01:35:37 tranquility systemd-timesyncd[1018]: Contacted time server 162.159.200.123:123 (0.debian.pool.ntp.org).
+```
+
+### Thunderbolt
+
+Because of the time zone issue above, I checked my Thunderbolt configuration status.
+The device seems have been authorized automatically:
+
+```sh
+❯ boltctl
+ ● Lenovo ThinkPad Thunderbolt 4 Dock
+   ├─ type:          peripheral
+   ├─ name:          ThinkPad Thunderbolt 4 Dock
+   ├─ vendor:        Lenovo
+   ├─ uuid:          d3fb8780-0027-a938-ffff-ffffffffffff
+   ├─ generation:    USB4
+   ├─ status:        authorized
+   │  ├─ domain:     a7b08780-3143-312b-ffff-ffffffffffff
+   │  ├─ rx speed:   40 Gb/s = 2 lanes * 20 Gb/s
+   │  ├─ tx speed:   40 Gb/s = 2 lanes * 20 Gb/s
+   │  └─ authflags:  none
+   ├─ authorized:    Sun 15 Oct 2023 08:47:23 PM UTC
+   ├─ connected:     Sun 15 Oct 2023 08:47:21 PM UTC
+   └─ stored:        Sun 15 Oct 2023 08:47:23 PM UTC
+      ├─ policy:     iommu
+      └─ key:        no
+
+
+❯ sudo systemctl status bolt.service
+● bolt.service - Thunderbolt system service
+     Loaded: loaded (/lib/systemd/system/bolt.service; static)
+     Active: active (running) since Thu 2023-10-12 10:53:24 CEST; 3 days ago
+       Docs: man:boltd(8)
+   Main PID: 1119 (boltd)
+     Status: "authmode: enabled, force-power: unset"
+      Tasks: 3 (limit: 38041)
+     Memory: 1.7M
+        CPU: 2.440s
+     CGroup: /system.slice/bolt.service
+             └─1119 /usr/libexec/boltd
+
+Oct 15 22:47:21 tranquility boltd[1119]: probing: started [1000]
+Oct 15 22:47:21 tranquility boltd[1119]: [d3fb8780-0027-ThinkPad Thunderbolt 4 Dock] authorize: authorization prepared for 'user' level
+Oct 15 22:47:21 tranquility boltd[1119]: [d3fb8780-0027-ThinkPad Thunderbolt 4 Dock] dbus: exported device at /org/freedesktop/bolt/devices/d3fb8780_0027...
+Oct 15 22:47:21 tranquility boltd[1119]: [d3fb8780-0027-ThinkPad Thunderbolt 4 Dock] udev: device changed: authorizing -> authorizing
+Oct 15 22:47:21 tranquility boltd[1119]: [d3fb8780-0027-ThinkPad Thunderbolt 4 Dock] udev: device changed: authorizing -> authorizing
+Oct 15 22:47:23 tranquility boltd[1119]: [d3fb8780-0027-ThinkPad Thunderbolt 4 Dock] authorize: finished: ok (status: authorized, flags: 0)
+Oct 15 22:47:23 tranquility boltd[1119]: [d3fb8780-0027                            ] bootacl: policy not 'auto', not adding
+Oct 15 22:47:23 tranquility boltd[1119]: [d3fb8780-0027-ThinkPad Thunderbolt 4 Dock] auto-enroll: done
+Oct 15 22:47:23 tranquility boltd[1119]: [d3fb8780-0027-ThinkPad Thunderbolt 4 Dock] udev: device changed: authorized -> authorized
+Oct 15 22:47:26 tranquility boltd[1119]: probing: timeout, done: [2788086] (2000000)
+```
+
+### Hamster Time Tracking Application
+
+```sh
+❯ cp -a /mnt/jkirk/.local/share/hamster/hamster.db .local/share/hamster
+```
+
+### Signal Deskop
+
+```sh
+❯ cp -a /mnt/jkirk/.config/Signal/ .config
+```
+
+First went offline, then started Signal and after everything looked fine, went online.
 
 ### SSH config
