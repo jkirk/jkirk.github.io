@@ -128,7 +128,9 @@ index a1b23ff..18edcc6 100644
 ❯ sudo update-initramfs -u -k all
 ```
 
-## NetworkManager Profiles
+## NetworkManager / Networking
+
+### NetworkManager Profiles
 
 ```
 ❯ ip a
@@ -159,7 +161,7 @@ mode=infrastructure
 ssid=home.syn-net.org
 ```
 
-## NetworkManager DNS + VPN
+### NetworkManager DNS + VPN
 
 Wireguard works out of the box, it does not need a network manager plugin to import the wireguard profile:
 
@@ -240,6 +242,27 @@ Then disabled autoconnect + "use this connection only for resources on its netwo
 ❯ nmcli c modify myopenvpn ipv4.never-default yes
 ```
 
+### NetworkManager + dnsmasq
+
+```
+❯ sudo cp -a /mnt/etc/NetworkManager/conf.d/dnsmasq.conf /etc/NetworkManager/conf.d
+
+❯ cat /etc/NetworkManager/conf.d/dnsmasq.conf
+[main]
+dns=dnsmasq
+```
+
+Add DNS server for "internal" domains to the dnsmasq configuration
+
+```
+❯ cat /etc/NetworkManager/dnsmasq.d/helios.conf
+server=/h2.syn-net.org/10.10.1.1
+```
+
+No DNS should be set in the VPN settings.
+
+See (to be answered): ubuntu - Using dnsmasq with NetworkManager - Super User: https://superuser.com/questions/681993/using-dnsmasq-with-networkmanager
+
 ### NetworkManager Auto Connection:
 
 Check auto-connection:
@@ -253,7 +276,7 @@ I noticed that the VPN DNS take priority over the globally set on.
 But if multiple VPN connections are enabled, the order from which they are started makes a difference.
 I will have to investigate the "ipv4.dns-priority" setting.
 
-## NetworkManager Mobile Broadband
+### NetworkManager Mobile Broadband
 
 I tried to setup Mobile Broadband but the NetworkManager bug seems still to exist:
 
@@ -363,6 +386,18 @@ There is a promising ModemManager issue:
 Other links:
 
 * Related: Driver for Fibocom L850-GL / Intel XMM7360 (PCI ID 8086:7360): https://github.com/xmm7360/xmm7360-pci/pull/50
+
+### NetworkManager: read WIFI via QR code
+
+Install wifi-qr:
+
+  kokoye2007/wifi-qr: Wifi QR code create and scan for linux: https://github.com/kokoye2007/wifi-qr
+
+```
+wifi-qr s
+```
+
+## Cinnamon Settings
 
 ### Cinnamon Keyboard Shortcuts
 
@@ -521,6 +556,86 @@ I like a dark theme like Adapta-Nokoto, so after installing the theme I changed 
 
 ![](screenshot_20231007T163736.png "GNOME Terminal in Adapta-Nokoto Theme")
 
+### Cinmamon Settings: Nemo
+
+```
+❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/nemo/
+[desktop]
+computer-icon-visible=false
+desktop-layout='true::false'
+show-orphaned-desktop-icons=false
+
+[list-view]
+search-visible-columns=['name', 'size', 'type', 'where']
+
+[plugins]
+disabled-actions=@as []
+
+[preferences]
+date-format='iso'
+default-folder-viewer='list-view'
+ignore-view-metadata=true
+show-compact-view-icon-toolbar=true
+show-computer-icon-toolbar=false
+show-hidden-files=true
+show-list-view-icon-toolbar=true
+show-location-entry=false
+show-open-in-terminal-toolbar=true
+start-with-dual-pane=true
+
+[window-state]
+bookmarks-expanded=true
+devices-expanded=true
+geometry='959x500+0+0'
+maximized=false
+my-computer-expanded=true
+network-expanded=true
+side-pane-view='places'
+sidebar-bookmark-breakpoint=3
+sidebar-width=254
+start-with-sidebar=true
+
+❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/nemo/ | dconf load /org/nemo/
+```
+
+Disable media handling:
+
+```
+❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/cinnamon/desktop/media-handling/
+[/]
+automount=false
+automount-open=false
+autorun-never=true
+autorun-x-content-ignore=['x-content/audio-player', 'x-content/unix-software', 'x-content/image-dcf']
+autorun-x-content-open-folder=['x-content/bootable-media']
+autorun-x-content-start-app=['x-content/audio-player', 'x-content/image-dcf']
+
+❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/cinnamon/desktop/media-handling/ | grep -v autorun-x | dconf load /org/cinnamon/desktop/media-handling/
+```
+
+## Other Software settings
+
+### VIM
+
+
+
+```
+error detected while processing modelines:
+line 4207:
+E992: Not allowed in a modeline when 'modelineexpr' is off: foldtext=getline(v:foldstart).'...'.(v:foldend-v:foldstart)
+```
+
+Check modelines settings:
+
+```
+:set modeline?
+:set modelines?
+:set modelinexpr?
+```
+
+modeline if off by default in Debian, see:
+
+
 ### Firefox Quantum
 
 I used to have Firefox Quantum in `$HOME/software/firefox`.
@@ -570,6 +685,15 @@ Transferred the settings file
 
 One also have to copy `.mozilla/native-messaging-hosts` or "Enable browser integration" for Firefox in KeePassXC > Browser Integration.
 
+### Chromium
+
+
+
+```sh
+❯ cp -a /mnt/jkirk/.config/chromium .config
+❯ cp -a /mnt/jkirk/.cache/chromium .cache
+```
+
 ### Thunderbird: Profiles + Settings
 
 My Thunderbird Profile is more than 10 years old.
@@ -613,6 +737,72 @@ user_pref("mail.server.server1.check_time", 90);
   * Enable adaptive junk filter loggin
 
 * How to install Thunderbird Extensions / Add-ons automatically?
+
+### Thunderbird: Certificate Exceptions
+
+The TLS Certificate Exceptions are saved in `cert9.db` and `cert_override.txt`.
+You could review and copy them or rebuild them from scratch.
+
+FTR, connected to an "untrusted" network (ie. a network not controlled by myself) where a Sophos firewall with "Deep Paket Inspection" was installed.
+I think I accidentally accepted the new certificate "permanently" (but can not tell for sure anymore).
+After leaving that network I received the following error when connecting to my IMAP server:
+
+> "Non-overridable TLS error occurred. Handshake error or probably the TLS version or certificate used by the server imap.syn-net.org is incompatible."
+
+I tried to remove and re-add the certificate (in Settings > Privacy & Security > Manage Certificates) but got the error:
+
+!["No Information Available". Unable to obtain identification status for this site.](screenshot_20231020T094904.png)
+
+I fixed it by deleting `cert9.db` + `cert_override.txt`.
+
+### Thunderbird: Addressbook
+
+Noticed a lot of abook sqlite files:
+
+```
+❯ l /mnt/jkirk/.thunderbird/bbq2wowx.default/abook*
+-rw-r--r-- 1 jkirk jkirk  66029 Oct  6  2020 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook.mab.bak
+-rw-r--r-- 1 jkirk jkirk 458752 Oct 13 20:45 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook.sqlite
+-rw-r--r-- 1 jkirk jkirk 458752 Jan  5  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook.v2.sqlite
+-rw-r--r-- 1 jkirk jkirk 458752 Oct  8  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook.v3.sqlite
+-rw-r--r-- 1 jkirk jkirk  54214 Sep 29  2020 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-1.mab.bak
+-rw-r--r-- 1 jkirk jkirk 393216 Oct  8  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-1.sqlite
+-rw-r--r-- 1 jkirk jkirk 393216 Jan  5  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-1.v2.sqlite
+-rw-r--r-- 1 jkirk jkirk 393216 Oct  8  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-1.v3.sqlite
+-rw-r--r-- 1 jkirk jkirk   1438 Oct 28  2009 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-1.mab_
+-rw-r--r-- 1 jkirk jkirk   1611 Dec  5  2019 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-2.mab.bak
+-rw-r--r-- 1 jkirk jkirk 327680 Oct  8  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-2.sqlite
+-rw-r--r-- 1 jkirk jkirk 327680 Jan  5  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-2.v2.sqlite
+-rw-r--r-- 1 jkirk jkirk 327680 Oct  8  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-2.v3.sqlite
+-rw-r--r-- 1 jkirk jkirk 327680 Oct  8  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-3.sqlite
+-rw-r--r-- 1 jkirk jkirk 327680 Jan  5  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-3.v2.sqlite
+-rw-r--r-- 1 jkirk jkirk 327680 Oct  8  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-3.v3.sqlite
+-rw-r--r-- 1 jkirk jkirk 327680 Dec 15  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-4.sqlite
+-rw-r--r-- 1 jkirk jkirk 327680 Jan  5  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-4.v2.sqlite
+-rw-r--r-- 1 jkirk jkirk 327680 Oct  8  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-4.v3.sqlite
+-rw-r--r-- 1 jkirk jkirk 262144 Jun 11 20:20 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-5.sqlite
+-rw-r--r-- 1 jkirk jkirk  67146 Nov  3  2009 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook.mab_
+```
+
+I omitted the `v2` and `v3` files:
+
+```sh
+❯ cp -a /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-[^\.].sqlite .thunderbird/gi77x3jn.default-default/
+```
+
+TODO: check prefs.js
+
+### Thunderbird: Filter
+
+```sh
+❯ cat .thunderbird/gi77x3jn.default-default/ImapMail/imap.syn-net.org/msgFilterRules.dat
+version="9"
+logging="no"
+
+❯ cp /mnt/jkirk/.thunderbird/bbq2wowx.default/ImapMail/syn-net.org/msgFilterRules.dat .thunderbird/gi77x3jn.default-default/ImapMail/imap.syn-net.org/msgFilterRules.dat
+```
+
+Had to create custom headers: `x-debian-pr-package`
 
 ### Thunderbird: End-To-End Encryption
 
@@ -975,7 +1165,7 @@ Oct 15 22:47:12 tranquility systemd[1]: Reached target suspend.target - Suspend.
 Oct 15 22:47:12 tranquility systemd[1]: Stopped target suspend.target - Suspend.
 ```
 
-Note, that I connect my notebook to the Thunderbolt Docking Station for the first time and turned it of at about 20:47 CEST.
+Note, that I connect my notebook to the Thunderbolt Docking Station for the first time and turned it off at about 20:47 CEST.
 
 I checked the time zone setting:
 
@@ -1000,6 +1190,7 @@ Warning: The system is configured to read the RTC time in the local time zone.
 and fixed it with:
 
 ```sh
+❯ timedatectl set-local-rtc 1 --adjust-system-clock
 ❯ timedatectl
                Local time: Sun 2023-10-15 21:08:37 CEST
            Universal time: Sun 2023-10-15 19:08:37 UTC
@@ -1137,4 +1328,186 @@ suspend=['XF86Sleep']
 window-screenshot=['<Alt>Print']
 ```
 
+### Samba Share
+
+I have laser printer/scanner which can scan its documents directly to my notebook.
+
+I created a dedicated user `laserjet`:
+
+```sh
+sudo adduser --no-create-home --disabled-password --disabled-login laserjet
+sudo smbpasswd -a laserjet
+```
+
+And created a dedicated share for the scanner and added the following lines to `/etc/samba/smb.conf`
+
+```
+[scan]
+   comment = Scan Folder
+   browseable = no
+   path = /home/jkirk/Documents/scans/laserjet
+   guest ok = no
+   create mask = 0644
+   valid users  = laserjet
+   write list = laserjet
+   force user = jkirk
+   force group = jkirk
+```
+
+### virtualbox
+
+Needs linux-headers...
+
+```
+❯ sudo lvcreate -L 100G -n vbox vg0-tranquility
+  Logical volume "vbox" created.
+
+~
+at 2023-10-25 20:10:11 +02:00 ❯ sudo mkfs.ext4 /dev/vg0-tranquility/vbox
+mke2fs 1.47.0 (5-Feb-2023)
+Creating filesystem with 26214400 4k blocks and 6553600 inodes
+Filesystem UUID: 704e7442-ef17-45f1-a854-ef1998f24c1f
+Superblock backups stored on blocks:
+        32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208,
+        4096000, 7962624, 11239424, 20480000, 23887872
+
+Allocating group tables: done
+Writing inode tables: done
+Creating journal (131072 blocks): done
+Writing superblocks and filesystem accounting information: done
+
+❯ mkdir "/home/jkirk/VirtualBox VMs"
+
+
+❯ grep VirtualBox /etc/fstab
+/dev/mapper/vg0--tranquility-vbox /home/jkirk/VirtualBox\040VMs          ext4    defaults        0       2
+
+❯ sudo systemctl daemon-reload
+❯ sudo mount -a
+
+❯ sudo chown jkirk:jkirk VirtualBox\ VMs
+
+❯ cp -a /mnt/jkirk/.config/VirtualBox .config
+```
+
+
+
+### docker / podman
+
+```sh
+at 2023-10-20 19:56:40 +02:00 ❯ sudo lvcreate -L 20G -n containers vg0-tranquility
+  Logical volume "containers" created.
+
+❯ sudo mkfs.ext4 /dev/vg0-tranquility/containers
+mke2fs 1.47.0 (5-Feb-2023)
+Creating filesystem with 2621440 4k blocks and 655360 inodes
+Filesystem UUID: 74779f17-43ca-4673-b62f-459ef73c43ed
+Superblock backups stored on blocks:
+        32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632
+
+Allocating group tables: done
+Writing inode tables: done
+Creating journal (16384 blocks): done
+Writing superblocks and filesystem accounting information: done
+
+
+at 2023-10-20 19:58:19 +02:00 ❯ mkdir .local/share/containers/
+
+
+
+❯ sudo mount /dev/vg0-tranquility/containers /home/jkirk/.local/share/containers
+
+❯ sudo chown jkirk:jkirk /home/jkirk/.local/share/containers
+```
+
+
+```
+/dev/mapper/vg0--tranquility-containers /home/jkirk/.local/share/containers           ext4    defaults        0       2
+```
+
+```
+❯ sudo systemctl daemon-reload
+```
+
+#### podman problems
+
+```sh
+❯ podman pull wordpress
+Error: command required for rootless mode with multiple IDs: exec: "newuidmap": executable file not found in $PATH
+```
+
+```
+❯ podman pull wordpress
+Error: short-name "wordpress" did not resolve to an alias and no unqualified-search registries are defined in "/etc/containers/registries.conf"
+
+
+❯ podman pull docker.io/wordpress
+Trying to pull docker.io/library/wordpress:latest...
+Getting image source signatures
+Copying blob 12a700ba0368 skipped: already exists
+Copying blob 22a19ba793cb skipped: already exists
+Copying blob 46e419350351 skipped: already exists
+Copying blob 1d7540f99b47 skipped: already exists
+Copying blob 9b19829d9fc5 skipped: already exists
+Copying blob d44a7be08f84 skipped: already exists
+Copying blob 8de997c28946 skipped: already exists
+Copying blob 84073d869176 skipped: already exists
+Copying blob 0c351c6a1d3f skipped: already exists
+Copying blob 6624316b1353 skipped: already exists
+Copying blob 81ea0c762078 skipped: already exists
+Copying blob 68680de1e42a skipped: already exists
+Copying blob 3f6f46332f1b skipped: already exists
+Copying blob e67fdae35593 skipped: already exists
+Copying blob c42c0b9ab38f skipped: already exists
+Copying blob 9d17674da2dd skipped: already exists
+Copying blob 91a39b0e19bd skipped: already exists
+Copying blob f43f1a40f0fe skipped: already exists
+Copying blob 076ed9c917d2 skipped: already exists
+Copying blob b6c1fd663115 skipped: already exists
+Copying blob a9e97aff2b31 done
+Copying config bd918e5d23 done
+Writing manifest to image destination
+Storing signatures
+bd918e5d2324041201a3ec4edb0f61dc9c998773481335128bed98300a3fd4b7
+
+```
+
+
+Or: https://blog.desigeek.com/post/2022/03/podman-error-on-ubuntu-short-name-did-not-resolve-to-an-alias-and-no-unqualified-search-registries/
+
+```
+❯ podman-compose up
+[...]
+Error: unable to start container f00a3a651a2158423d3acd458592396930871cf26f902d92368a16d503b0d847: failed to mount runtime directory for rootless netns: no such file or directory
+exit code: 125
+podman start -a wordpress_db_1
+Error: unable to start container 4a19bc1a36c32dc73ff71726d975c4773cb780c2e33599557eaa76a9d1c0531b: failed to mount runtime directory for rootless netns: no such file or directory
+exit code: 125
+
+❯ podman-compose down
+```
+
+```sh
+❯ l /run/user/1000/libpod/tmp
+total 4
+-rw-r--r-- 1 jkirk jkirk  0 Oct 20 19:41 alive
+-rw-r--r-- 1 jkirk jkirk  0 Oct 20 19:36 alive.lck
+drwxr-x--- 2 jkirk jkirk 40 Oct 21 10:17 exits
+-rw------- 1 jkirk jkirk  6 Oct 20 19:41 pause.pid
+drwx------ 2 jkirk jkirk 40 Oct 21 10:07 rootless-netns
+-rw-r--r-- 1 jkirk jkirk  0 Oct 21 10:07 rootless-netns.lock
+
+l /run/user/1000/netns
+total 0
+-rw-r--r-- 1 jkirk jkirk 0 Oct 21 10:07 rootless-netns-6ef37e2c05ee6c74c0e2
+
+❯ sudo rm /run/user/1000/netns/rootless-netns-6ef37e2c05ee6c74c0e2
+
+❯ sudo rm /run/user/1000/libpod/tmp/rootless-netns.lock
+
+❯ sudo rm -rf /run/user/1000/libpod/tmp/rootless-netns
+```
+
+
 ### SSH config
+
