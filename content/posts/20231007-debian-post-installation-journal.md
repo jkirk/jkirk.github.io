@@ -163,7 +163,7 @@ ssid=home.syn-net.org
 
 ### NetworkManager DNS + VPN
 
-Wireguard works out of the box, it does not need a network manager plugin to import the wireguard profile:
+Wireguard actually works out of the box, a network manager plugin is not needed to import the wireguard profile:
 
 ```
 ❯ nmcli connection import type wireguard file wireguard/wg-hetzner.conf
@@ -171,6 +171,11 @@ Connection 'wg-hetzner' (a7755f75-af8e-4cd9-965b-e0ea2410c9af) successfully adde
 ```
 
 See: https://blogs.gnome.org/thaller/2019/03/15/wireguard-in-networkmanager/
+
+.. note:: Only the private key which is saved in the profile file is needed to connect to Wireguard peers.
+  To generate a new private / public key pair, one should use `wg genkey` from the `wireguard-tools` package.
+
+  To derive the public key from the private key run `wg pubkey < privatekey > publickey`.
 
 I use different DNS servers for different VPNs.
 I.e. I used the "internal" DNS server for my "internal" VMs on the Hetzner server.
@@ -241,6 +246,27 @@ Then disabled autoconnect + "use this connection only for resources on its netwo
 ❯ nmcli c modify myopenvpn connection.autoconnect no
 ❯ nmcli c modify myopenvpn ipv4.never-default yes
 ```
+
+### NetworkManager: openvpn configuration
+
+```
+Nov 09 15:15:52 tranquility NetworkManager[2609594]: <info>  [1699539352.4011] agent-manager: agent[35facdc0daaf3791,:1.1017534/nmcli-connect/1000]: agent registered
+Nov 09 15:15:52 tranquility NetworkManager[2609594]: <info>  [1699539352.4080] vpn[0x55e7f43d04b0,d181c6fa-bff5-41ee-8d4f-a1a533cca41f,"snr"]: starting openvpn
+Nov 09 15:15:52 tranquility NetworkManager[2609594]: <info>  [1699539352.4083] audit: op="connection-activate" uuid="d181c6fa-bff5-41ee-8d4f-a1a533cca41f" name="snr" pid=2610289 uid=1000 result="success"
+Nov 09 15:15:52 tranquility NetworkManager[2610319]: 2023-11-09 15:15:52 WARNING: Compression for receiving enabled. Compression has been used in the past to break encryption. Sent packets are not compressed unless "allow-compression yes" is also set.
+Nov 09 15:15:52 tranquility nm-openvpn[2610319]: OpenVPN 2.6.3 x86_64-pc-linux-gnu [SSL (OpenSSL)] [LZO] [LZ4] [EPOLL] [PKCS11] [MH/PKTINFO] [AEAD] [DCO]
+Nov 09 15:15:52 tranquility nm-openvpn[2610319]: library versions: OpenSSL 3.0.11 19 Sep 2023, LZO 2.10
+Nov 09 15:15:52 tranquility nm-openvpn[2610319]: DCO version: N/A
+Nov 09 15:15:52 tranquility nm-openvpn[2610319]: WARNING: No server certificate verification method has been enabled.  See http://openvpn.net/howto.html#mitm for more info.
+Nov 09 15:15:52 tranquility nm-openvpn[2610319]: NOTE: the current --script-security setting may allow this configuration to call user-defined scripts
+Nov 09 15:15:52 tranquility nm-openvpn[2610319]: OpenSSL: error:0A00018E:SSL routines::ca md too weak
+Nov 09 15:15:52 tranquility nm-openvpn[2610319]: Cannot load certificate file /home/jkirk/.cert/nm-openvpn/snr.user.crt
+Nov 09 15:15:52 tranquility nm-openvpn[2610319]: Exiting due to fatal error
+```
+
+In Network Settings > VPN > Settings > TLS Authentication > added TLS cipher string "DEFAULT:@SECLEVEL=0" (without quotes) to workaround this.
+
+See: https://superuser.com/a/1741782
 
 ### NetworkManager + dnsmasq
 
@@ -399,7 +425,39 @@ wifi-qr s
 
 ## Cinnamon Settings
 
+I noticed that some of the settings were not loaded instantly / automatically (although they should).
+I spastically noticed that with the following keyboard shortcuts.
+
+What helped, was to delete the setting / unregister the keyboard shortcut and load the (specific) setting again.
+
+One can monitor the changes to the dconf database with `dconf watch PATH`
+
+The problem is, that the keyboard shortcuts are not listed in the custom-list:
+
+```
+    ❯ dconf list /org/cinnamon/desktop/keybindings/custom-keybindings/
+    custom0/
+    custom1/
+    custom2/
+    custom3/
+    custom4/
+    custom5/
+    custom6/
+    custom7/
+    custom8/
+
+    ❯ dconf read /org/cinnamon/desktop/keybindings/custom-list
+    ['custom8', 'custom0', 'custom1', 'custom2', 'custom3', 'custom5', 'custom6', 'custom7']
+```
+
 ### Cinnamon Keyboard Shortcuts
+
+TODO: transfer file:
+
+```
+❯ dconf read /org/cinnamon/desktop/keybindings/custom-list
+['custom4', 'custom7', 'custom6', 'custom5', 'custom3', 'custom2', 'custom1', 'custom0', 'custom8']
+```
 
 To backup Cinnamon Setting one has to use `dconf dump`.
 
@@ -497,6 +555,23 @@ layouts=['us\taltgr-intl', 'at\tnodeadkeys', 'us']
 options=['grp\tgrp:shift_caps_toggle']
 ```
 
+### Cinnamon Settings: gnome-screenshot
+
+Transferred the settings:
+
+```sh
+❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/gnome/gnome-screenshot/
+[/]
+auto-save-directory='file:///home/jkirk/Pictures/screenshots'
+border-effect='none'
+delay=3
+include-border=true
+include-pointer=false
+last-save-directory='file:///home/jkirk/Pictures/screenshots'
+
+❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/gnome/gnome-screenshot/ | dconf load /org/gnome/gnome-screenshot/
+```
+
 ### Cinnamon Settings: gnome-terminal
 
 Transferred the settings:
@@ -556,7 +631,7 @@ I like a dark theme like Adapta-Nokoto, so after installing the theme I changed 
 
 ![](screenshot_20231007T163736.png "GNOME Terminal in Adapta-Nokoto Theme")
 
-### Cinmamon Settings: Nemo
+### Cinnamon Settings: Nemo
 
 ```
 ❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/nemo/
@@ -613,7 +688,164 @@ autorun-x-content-start-app=['x-content/audio-player', 'x-content/image-dcf']
 ❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/cinnamon/desktop/media-handling/ | grep -v autorun-x | dconf load /org/cinnamon/desktop/media-handling/
 ```
 
+### Cinnamon Settings: Applets
+
+The default applets:
+
+```
+❯ dconf read /org/cinnamon/enabled-applets
+['panel1:left:0:menu@cinnamon.org:0', 'panel1:left:1:separator@cinnamon.org:1', 'panel1:left:2:grouped-window-list@cinnamon.org:2', 'panel1:right:0:systray@cinnamon.org:3', 'panel1:right:1:xapp-status@cinnamon.org:4', 'panel1:right:2:notifications@cinnamon.org:5', 'panel1:right:3:printers@cinnamon.org:6', 'panel1:right:4:removable-drives@cinnamon.org:7', 'panel1:right:5:keyboard@cinnamon.org:8', 'panel1:right:6:favorites@cinnamon.org:9', 'panel1:right:7:network@cinnamon.org:10', 'panel1:right:8:sound@cinnamon.org:11', 'panel1:right:9:power@cinnamon.org:12', 'panel1:right:10:calendar@cinnamon.org:13', 'panel1:right:11:cornerbar@cinnamon.org:14']
+```
+
+Make it more readable:
+
+```
+❯ dconf read /org/cinnamon/enabled-applets | tr -d '\]' | tr -d '\[' | tr ',' '\n' | tr -d ' '
+'panel1:left:0:menu@cinnamon.org:0'
+'panel1:left:1:separator@cinnamon.org:1'
+'panel1:left:2:grouped-window-list@cinnamon.org:2'
+'panel1:right:0:systray@cinnamon.org:3'
+'panel1:right:1:xapp-status@cinnamon.org:4'
+'panel1:right:2:notifications@cinnamon.org:5'
+'panel1:right:3:printers@cinnamon.org:6'
+'panel1:right:4:removable-drives@cinnamon.org:7'
+'panel1:right:5:keyboard@cinnamon.org:8'
+'panel1:right:6:favorites@cinnamon.org:9'
+'panel1:right:7:network@cinnamon.org:10'
+'panel1:right:8:sound@cinnamon.org:11'
+'panel1:right:9:power@cinnamon.org:12'
+'panel1:right:10:calendar@cinnamon.org:13'
+'panel1:right:11:cornerbar@cinnamon.org:14'
+```
+
 ## Other Software settings
+
+### taskwarrior
+
+Migrated taskwarrior data location:
+
+```
+❯ cp -a /mnt/jkirk/Documents/taskwarrior/.task .task
+```
+
+And migrated the taskrc configuration file from /mnt/jkirk/Documents/taskwarrior to dotfiles.
+
+See: Merge unrelated git histories.
+
+```
+(1/5) 'Writeable' context
+  [...]
+
+  What do I have to do?
+  You have 9 defined contexts, out of which 9 are old-style:
+  * als: proj:sp.als
+  * home: proj.not:sp
+  * lw: proj:lw
+  * notals: proj.not:sp.als
+  * oebm: tags:oebm
+  * pmt: proj:sp.pmt
+  * prt: proj:sp.prt
+  * waldrapp: proj:sn.waldrapp
+  * work: project.has:sn or project.has:sp
+
+  These need to be migrated to new-style, which uses context.<name>.read and
+  context.<name>.write config variables. Please run the following commands:
+  $ task context define als 'proj:sp.als'
+  $ task context define home 'proj.not:sp'
+  $ task context define lw 'proj:lw'
+  $ task context define notals 'proj.not:sp.als'
+  $ task context define oebm 'tags:oebm'
+  $ task context define pmt 'proj:sp.pmt'
+  $ task context define prt 'proj:sp.prt'
+  $ task context define waldrapp 'proj:sn.waldrapp'
+  $ task context define work 'project.has:sn or project.has:sp'
+
+  Please check these filters are also valid modifications. If a context filter is not
+  a valid modification, you can set the context.<name>.write configuration variable to
+  specify the write context explicitly. Read more in CONTEXT section of man taskrc.
+
+(2/5) Deprecation of the status:waiting
+
+  Background
+  If a task has a 'wait' attribute set to a date in the future, it is modified
+  to have a 'waiting' status. Once that date is no longer in the future, the status
+  is modified to back to 'pending'.
+
+  What changed in 2.6.0?
+  The 'waiting' value of status is deprecated, instead users should use +WAITING
+  virtual tag, or explicitly query for wait.after:now (the two are equivalent).
+
+  The status:waiting query still works in 2.6.0, but support will be dropped in 3.0.
+
+  What do I have to do?
+  In your custom report definitions, the following expressions should be replaced:
+  * 'status:pending or status:waiting' should be replaced by 'status:pending'
+  * 'status:pending' should be replaced by 'status:pending -WAITING'
+
+
+(3/5) Environment variables in the taskrc
+
+  What changed in 2.6.0?
+  Taskwarrior now supports expanding environment variables in the taskrc file,
+  allowing users to customize the behaviour of 'task' based on the current env.
+
+  The environment variables can either be used in paths, or as separate values:
+    data.location=$XDG_DATA_HOME/task/
+    default.project=$PROJECT
+
+(4/5) Context-less reports
+
+  Background
+  By default, every report is affected by currently active context.
+
+  What changed in 2.6.0?
+  You can now make a selected report ignore currently active context by setting
+  'report.<name>.context' configuration variable to 0.
+
+  What was the motivation behind this feature?
+  This is useful for users who utilize a single place (such as project:Inbox)
+  to collect their new tasks that are then triaged on a regular basis
+  (such as in GTD methodology).
+
+  In such a case, defining a report that filters for project:Inbox and making it
+  fully accessible from any context is a major usability improvement.
+
+
+(5/5) Support for XDG Base Directory Specification
+
+  Background
+  The XDG Base Directory specification provides standard locations to store
+  application data, configuration, state, and cached data in order to keep $HOME
+  clutter-free. The locations are usually set to ~/.local/share, ~/.config,
+  ~/.local/state and ~/.cache respectively.
+
+  What changed in 2.6.0?
+  If taskrc is not found at '~/.taskrc', Taskwarrior will attempt to find it
+  at '$XDG_CONFIG_HOME/task/taskrc' (defaults to '~/.config/task/taskrc').
+
+  What was the motivation behind this feature?
+  This allows users to fully follow XDG Base Directory Spec by moving their taskrc:
+      $ mkdir $XDG_CONFIG_HOME/task
+      $ mv ~/.taskrc $XDG_CONFIG_HOME/task/taskrc
+
+  and further setting:
+      data.location=$XDG_DATA_HOME/task/
+      hooks.location=$XDG_CONFIG_HOME/task/hooks/
+
+  Solutions in the past required symlinks or more cumbersome configuration overrides.
+
+  What do I have to do?
+  If you configure your data.location and hooks.location as above, ensure
+  that the XDG_DATA_HOME and XDG_CONFIG_HOME environment variables are set,
+  otherwise they're going to expand to empty string. Alternatively you can
+  hardcode the desired paths on your system.
+
+```
+
+Run 'task news 2.6.0 minor' for more.
+
+Run 'task news 2.6.0'.
+
 
 ### VIM
 
@@ -782,15 +1014,43 @@ Noticed a lot of abook sqlite files:
 -rw-r--r-- 1 jkirk jkirk 327680 Oct  8  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-4.v3.sqlite
 -rw-r--r-- 1 jkirk jkirk 262144 Jun 11 20:20 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-5.sqlite
 -rw-r--r-- 1 jkirk jkirk  67146 Nov  3  2009 /mnt/jkirk/.thunderbird/bbq2wowx.default/abook.mab_
+
+
+❯ l /mnt/jkirk/.thunderbird/bbq2wowx.default/impab-[^\.].sqlite /mnt/jkirk/.thunderbird/bbq2wowx.default/impab.sqlite
+-rw-r--r-- 1 jkirk jkirk  819200 Oct  7 10:59 /mnt/jkirk/.thunderbird/bbq2wowx.default/impab.sqlite
+-rw-r--r-- 1 jkirk jkirk 1081344 Sep 24 18:18 /mnt/jkirk/.thunderbird/bbq2wowx.default/impab-1.sqlite
+-rw-r--r-- 1 jkirk jkirk  393216 Sep 24 18:18 /mnt/jkirk/.thunderbird/bbq2wowx.default/impab-2.sqlite
+-rw-r--r-- 1 jkirk jkirk  327680 Oct  8  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/impab-3.sqlite
+-rw-r--r-- 1 jkirk jkirk  327680 Oct  8  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/impab-4.sqlite
+-rw-r--r-- 1 jkirk jkirk 1441792 Oct  7 10:59 /mnt/jkirk/.thunderbird/bbq2wowx.default/impab-5.sqlite
+
+❯ l /mnt/jkirk/.thunderbird/bbq2wowx.default/history.*
+-rw-r--r-- 1 jkirk jkirk  299285 Oct  7  2020 /mnt/jkirk/.thunderbird/bbq2wowx.default/history.mab.bak
+-rw-r--r-- 1 jkirk jkirk 1966080 Oct 13 20:45 /mnt/jkirk/.thunderbird/bbq2wowx.default/history.sqlite
+-rw-r--r-- 1 jkirk jkirk 1835008 Jan  5  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/history.v2.sqlite
+-rw-r--r-- 1 jkirk jkirk 1835008 Oct  8  2022 /mnt/jkirk/.thunderbird/bbq2wowx.default/history.v3.sqlite
+-rw-r--r-- 1 jkirk jkirk    7920 Feb 12  2008 /mnt/jkirk/.thunderbird/bbq2wowx.default/history.mab_
 ```
 
 I omitted the `v2` and `v3` files:
 
 ```sh
+❯ cp /mnt/jkirk/.thunderbird/bbq2wowx.default/history.sqlite .thunderbird/gi77x3jn.default-default/history.sqlite
+
 ❯ cp -a /mnt/jkirk/.thunderbird/bbq2wowx.default/abook-[^\.].sqlite .thunderbird/gi77x3jn.default-default/
+
+❯ cp -a /mnt/jkirk/.thunderbird/bbq2wowx.default/impab-[^\.].sqlite /mnt/jkirk/.thunderbird/bbq2wowx.default/impab.sqlite .thunderbird/gi77x3jn.default-default
 ```
 
-TODO: check prefs.js
+Review: prefs.js
+
+Something like this should exist for each file:
+```
+      user_pref("ldap_2.servers.Lsungsweg.description", "Lösungsweg");
+      user_pref("ldap_2.servers.Lsungsweg.dirType", 101);
+      user_pref("ldap_2.servers.Lsungsweg.filename", "abook-3.sqlite");
+      user_pref("ldap_2.servers.Lsungsweg.uid", "f66bbc4e-eb3f-4c9f-9ff9-309986086a2e");
+```
 
 ### Thunderbird: Filter
 
@@ -1225,6 +1485,12 @@ Oct 14 16:37:10 tranquility systemd-timesyncd[1018]: Contacted time server 131.1
 Oct 15 01:35:37 tranquility systemd-timesyncd[1018]: Contacted time server 162.159.200.123:123 (0.debian.pool.ntp.org).
 ```
 
+I later changed that to:
+
+```
+❯ sudo timedatectl set-local-rtc 0
+```
+
 ### Thunderbolt
 
 Because of the time zone issue above, I checked my Thunderbolt configuration status.
@@ -1390,7 +1656,14 @@ Writing superblocks and filesystem accounting information: done
 ❯ cp -a /mnt/jkirk/.config/VirtualBox .config
 ```
 
+After installation don't forget:
 
+```
+  ❯ sudo adduser jkirk vboxusers 
+  [sudo] password for jkirk: 
+  Adding user `jkirk' to group `vboxusers' ...
+  Done.
+```
 
 ### docker / podman
 
@@ -1508,6 +1781,253 @@ total 0
 ❯ sudo rm -rf /run/user/1000/libpod/tmp/rootless-netns
 ```
 
+### Ansible + ara
+
+```
+❯ cat /opt/requirements.txt
+ara
+ara[server]
+
+❯ . /opt/venv3/bin/activate
+
+❯ pip install -r /opt/requirements.txt
+
+❯ cp -a /mnt/jkirk/.ara .
+```
+
+```
+❯ ara_last
+Internal Server Error: /api/v1/playbooks
+Traceback (most recent call last):
+  File "/opt/venv3/lib/python3.11/site-packages/django/db/backends/utils.py", line 89, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/django/db/backends/sqlite3/base.py", line 328, in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+sqlite3.OperationalError: no such column: playbooks.client_version
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/opt/venv3/lib/python3.11/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/django/views/decorators/csrf.py", line 56, in wrapper_view
+    return view_func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/rest_framework/viewsets.py", line 125, in view
+    return self.dispatch(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/rest_framework/views.py", line 509, in dispatch
+    response = self.handle_exception(exc)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/rest_framework/views.py", line 469, in handle_exception
+    self.raise_uncaught_exception(exc)
+  File "/opt/venv3/lib/python3.11/site-packages/rest_framework/views.py", line 480, in raise_uncaught_exception
+    raise exc
+  File "/opt/venv3/lib/python3.11/site-packages/rest_framework/views.py", line 506, in dispatch
+    response = handler(request, *args, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/rest_framework/mixins.py", line 40, in list
+    page = self.paginate_queryset(queryset)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/rest_framework/generics.py", line 171, in paginate_queryset
+    return self.paginator.paginate_queryset(queryset, self.request, view=self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/rest_framework/pagination.py", line 395, in paginate_queryset
+    return list(queryset[self.offset:self.offset + self.limit])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/django/db/models/query.py", line 398, in __iter__
+    self._fetch_all()
+  File "/opt/venv3/lib/python3.11/site-packages/django/db/models/query.py", line 1881, in _fetch_all
+    self._result_cache = list(self._iterable_class(self))
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/django/db/models/query.py", line 91, in __iter__
+    results = compiler.execute_sql(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/django/db/models/sql/compiler.py", line 1562, in execute_sql
+    cursor.execute(sql, params)
+  File "/opt/venv3/lib/python3.11/site-packages/django/db/backends/utils.py", line 67, in execute
+    return self._execute_with_wrappers(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/django/db/backends/utils.py", line 80, in _execute_with_wrappers
+    return executor(sql, params, many, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/django/db/backends/utils.py", line 84, in _execute
+    with self.db.wrap_database_errors:
+  File "/opt/venv3/lib/python3.11/site-packages/django/db/utils.py", line 91, in __exit__
+    raise dj_exc_value.with_traceback(traceback) from exc_value
+  File "/opt/venv3/lib/python3.11/site-packages/django/db/backends/utils.py", line 89, in _execute
+    return self.cursor.execute(sql, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv3/lib/python3.11/site-packages/django/db/backends/sqlite3/base.py", line 328, in execute
+    return super().execute(query, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+django.db.utils.OperationalError: no such column: playbooks.client_version
+2023-11-14 18:53:26,317 ERROR ara.clients.http: Failed to get on /api/v1/playbooks: {'params': {'order': '-started', 'limit': '1'}}
+2023-11-14 18:53:26,317 ERROR ara.clients.http: Failed to get on /api/v1/playbooks: {'params': {'order': '-started', 'limit': '1'}}
+2023-11-14 18:53:26,317 ERROR ara: Expecting value: line 2 column 1 (char 1)
+
+❯ ara-manage migrate
+ara] Using settings file: /home/jkirk/.ara/server/settings.yaml
+perations to perform:
+ Apply all migrations: admin, api, auth, contenttypes, db, sessions
+unning migrations:
+ Applying api.0011_play_label_name_max_length... OK
+ Applying api.0012_playbook_user... OK
+ Applying api.0013_task_status... updated status for 637 task(s) based on failed or unreachable results
+OK
+ Applying api.0014_ara_versions... OK
+ Applying api.0015_task_uuid... OK
+ Applying api.0016_revert_play_label_name_length... OK
+ Applying api.0017_optional_playbook_controller... OK
+ Applying auth.0012_alter_user_first_name_max_length... OK
+```
+
+### Ansible + mitogen
+
+```
+❯ cd /opt
+
+/opt via 🐍 v3.11.2
+at 2023-11-15 10:13:10 +01:00 ❯ git clone https://github.com/dw/mitogen.git
+
+/opt via 🐍 v3.11.2
+at 2023-11-15 10:13:10 +01:00 ❯ cd mitogen
+
+/opt/mitogen on  master (798032b) via 🐍 v3.11.2
+❯ git log -1
+commit 798032b9 (HEAD -> master, origin/master, origin/HEAD)
+Merge: d839cbfa 3f105d51
+Author: Alex Willmer <alex@moreati.org.uk>
+Date:   2023-10-05 14:59:01 +0100
+
+    Merge pull request #1027 from moreati/pyver-token
+
+    ci: Authenticate UsePythonVersion requests to Github
+```
+
+```
+❯ . /opt/venv3/bin/activate; source <(python3 -m ara.setup.env); export ANSIBLE_STRATEGY=mitogen_linear ANSIBLE_STRATEGY_PLUGINS="/opt/mitogen/ansible_mitogen/plugins/strategy"
+
+
+❯ ansible-playbook -C -D site.yml
+Operations to perform:
+  Apply all migrations: admin, api, auth, contenttypes, db, sessions
+Running migrations:
+  No migrations to apply.
+
+PLAY [Setup site wide monitoring configuration] *******************************************************************************************************************************************************************
+ERROR! Your Ansible version ((2, 14, 3)) is too recent. The most recent version
+supported by Mitogen for Ansible is (2, 13).x. Please check the Mitogen
+release notes to see if a new version is available, otherwise
+subscribe to the corresponding GitHub issue to be notified when
+support becomes available.
+
+    https://mitogen.rtfd.io/en/latest/changelog.html
+    https://github.com/mitogen-hq/mitogen/issues/
+
+
+❯ ansible --version
+ansible [core 2.14.3]
+  config file = /home/jkirk/projects/synpro/pmt-ansible/ansible.cfg
+  configured module search path = ['/home/jkirk/.ansible/plugins/modules', '/usr/share/ansible/plugins/modules']
+  ansible python module location = /usr/lib/python3/dist-packages/ansible
+  ansible collection location = /home/jkirk/.ansible/collections:/usr/share/ansible/collections
+  executable location = /usr/bin/ansible
+  python version = 3.11.2 (main, Mar 13 2023, 12:18:29) [GCC 12.2.0] (/usr/bin/python3)
+  jinja version = 3.1.2
+  libyaml = True
+```
+
+
+Fixed via
+
+```
+/opt/mitogen on  master (798032b) via 🐍 v3.11.2
+❯ git remote add moreati https://github.com/moreati/mitogen.git
+❯ git fetch moreati
+❯ git co -b pr977 moreati/2.14
+Switched to branch 'pr977'
+Your branch is up to date with 'moreati/2.14'.
+
+/opt/mitogen on  pr977:2.14 (48f6802) via 🐍 v3.11.2
+
+❯ git log -1
+commit 48f68025 (HEAD -> pr977, moreati/2.14)
+Author: Alex Willmer <alex@moreati.org.uk>
+Date:   2023-08-02 18:20:33 +0100
+
+    fixup! Bump ANSIBLE_VERSION_MAX to 2.14
+```
+
+Mika mentioned ansible-mitogen which included the simple patch for ansible 2.14 support: https://sources.debian.org/src/python-mitogen/0.3.4-2/debian/patches/ansible-2.14/
+
+So, installing ansible-mitogen is enough.
+
+
+### Archive
+
+```
+❯ sudo du -sch /mnt/Archive
+14G     /mnt/Archive
+14G     total
+
+~
+at 2023-11-04 16:00:08 +01:00 ❯ mkdir Documents/Archive
+
+at 2023-11-04 16:00:49 +01:00 ❯ sudo lvcreate -L 20G -n archive vg0-tranquility
+  Logical volume "archive" created.
+
+❯ sudo mkfs.ext4 /dev/vg0-tranquility/archive
+mke2fs 1.47.0 (5-Feb-2023)
+Creating filesystem with 5242880 4k blocks and 1310720 inodes
+Filesystem UUID: 27f41ad0-7a01-448b-aab9-3463d1abb6e3
+Superblock backups stored on blocks:
+        32768, 98304, 163840, 229376, 294912, 819200, 884736, 1605632, 2654208,
+        4096000
+
+Allocating group tables: done
+Writing inode tables: done
+Creating journal (32768 blocks): done
+Writing superblocks and filesystem accounting information: done
+
+❯ sudo vim /etc/fstab
+
+~ took 6s
+at 2023-11-04 16:02:38 +01:00 ❯ sudo systemctl daemon-reload
+❯ sudo mount -a
+❯ sudo chown jkirk:jkirk Documents/Archive
+❯ sudo cp -a /mnt/Archive/. Documents/Archive/
+
+```
+
+### Papersize: A4
+
+Status: unsolved
+
+```
+❯ cat /etc/papersize
+letter
+
+
+❯ sudo dpkg-reconfigure libpaper1
+[sudo] password for jkirk:
+Replacing config file /etc/papersize with new version
+
+❯ cat /etc/papersize
+a4
+```
+
+See: [How can I ensure that all programs use the same paper size?](https://www.debian.org/doc/manuals/debian-faq/customizing.en.html#papersize)
+
+### LibreOffice
+
+Brauch ich? hunspell-de-at
 
 ### SSH config
 
