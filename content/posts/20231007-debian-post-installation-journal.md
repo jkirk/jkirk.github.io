@@ -5,17 +5,17 @@ date: 2023-10-07T08:37:03Z
 draft: true
 ---
 
-The Debian installation is easy. Configuring the system to my needs is much harder.
+Installing Debian is easy. Configuring the system to my needs is much harder.
 
-My goal is to bootstrap/deploy the most important programs and settings as quickly and as automatically as possible.
+The goal is to bootstrap/deploy the most important programs and settings as quickly and as automatically as possible.
 <!--more-->
 
 ## Linux Desktop Bootstrap
 
-To make my Linux Desktop I need my dotfiles and some basic programs.
+To set up my "Linux Desktop" I need my dotfiles and some basic programs.
 
-I developed [linux-desktop-bootstrap.sh](https://github.com/jkirk/linux-desktop-bootstrap) where the `git`, `etckeeper`, and `ansible-core` gets installed at first.
-Then my dotfiles get deployed and the my base software selection gets installed.
+I developed [linux-desktop-bootstrap.sh](https://github.com/jkirk/linux-desktop-bootstrap), which installs `git`, `etckeeper`, and `ansible-core`.
+My dotfiles get deployed and my base software selection gets installed:
 
 ```sh
 ❯ busybox wget -O - https://raw.githubusercontent.com/jkirk/linux-desktop-bootstrap/main/linux-desktop-bootstrap.sh | sh
@@ -24,6 +24,8 @@ Then my dotfiles get deployed and the my base software selection gets installed.
 See [jkirk/linux-desktop-bootstrap: Make your GNU/Linux Debian Desktop usable](https://github.com/jkirk/linux-desktop-bootstrap) for details.
 
 ## Migrate Data
+
+The next step was to migrate the data. I have several mount points that I copy to an external drive:
 
 ```sh
 ❯ mount -t ext4
@@ -51,7 +53,7 @@ See [jkirk/linux-desktop-bootstrap: Make your GNU/Linux Debian Desktop usable](h
 
 ### Change hostname + LVM Volume Group Name
 
-Changed the hostname and `/etc/hosts`:
+After the installation, I decided to change the hostname from `predator` to `tranquility`:
 
 ```sh
 ❯ sudo hostnamectl hostname tranquilit
@@ -83,15 +85,15 @@ index 684d4e6..a5431c8 100644
  ::1     localhost ip6-localhost ip6-loopback
 ```
 
-Changing the Volume Group name was a bit trickier:
+The LVM Volume Group Name `vg0-predator` also needs to be renamed to `vg0-tranquility`.
 
-When doing the following, the X-Server / Display Manager restarted:
+This was a bit trickier as the X server / Display Manager was restarted when I did the following:
 
 ```sh
 ❯ sudo vgrename vg0-predator vg0-tranquility
 ```
 
-Adjusted `/etc/fstab` + `/boot/grub/grub.cfg` and updated initramfs:
+I adjusted `/etc/fstab` + `/boot/grub/grub.cfg` and updated initramfs:
 
 ```sh
 ❯ sudo etckeeper vcs show 04c5a263fc10ae81061e5426b3d434a1d328363a /etc/fstab
@@ -128,9 +130,11 @@ index a1b23ff..18edcc6 100644
 ❯ sudo update-initramfs -u -k all
 ```
 
-## NetworkManager / Networking
+## Networking / NetworkManager
 
 ### NetworkManager Profiles
+
+To migrate the network settings, I had to update the interface name and remove the 'mac-address' lines:
 
 ```
 ❯ ip a
@@ -172,22 +176,22 @@ Connection 'wg-hetzner' (a7755f75-af8e-4cd9-965b-e0ea2410c9af) successfully adde
 
 See: https://blogs.gnome.org/thaller/2019/03/15/wireguard-in-networkmanager/
 
-.. note:: Only the private key which is saved in the profile file is needed to connect to Wireguard peers.
-  To generate a new private / public key pair, one should use `wg genkey` from the `wireguard-tools` package.
-
-  To derive the public key from the private key run `wg pubkey < privatekey > publickey`.
+> **_NOTE:_** The private key which is saved in the profile file is needed to connect to Wireguard peers.
+>
+> To generate a new private / public key pair, one should use `wg genkey` from the `wireguard-tools` package.
+>
+> To derive the public key from the private key run `wg pubkey < privatekey > publickey`.
 
 I use different DNS servers for different VPNs.
-I.e. I used the "internal" DNS server for my "internal" VMs on the Hetzner server.
-For that I had a dnsmasq configuration like this:
+I.e. I use the "internal" DNS server for my "internal" VMs on the Hetzner server.
+For that I have a dnsmasq configuration like this (see [below](#networkmanager-with-dnsmasq) for details)
 
 ```sh
-❯ sudo cp -a /mnt/etc/NetworkManager/dnsmasq.d/helios.conf /etc/NetworkManager/dnsmasq.d/hetzner.conf
 ❯ cat /etc/NetworkManager/dnsmasq.d/hetzner.conf
 server=/h2.syn-net.org/10.10.1.1
 ```
 
-I decided to try the dns setting in NetworkManager WireGuard profile:
+I also tried the DNS setting in NetworkManager WireGuard profile:
 
 ```sh
 ❯ nmcli c modify wg-hetzner ipv4.dns 10.10.1.1
@@ -196,9 +200,11 @@ I decided to try the dns setting in NetworkManager WireGuard profile:
 ipv4.dns:                               10.10.1.1
 ```
 
-TODO: This could leak the VPN domain name to the external DNS server and or external queries to the VPN DNS server.
+This works as well but leaks the VPN domain name to the external DNS server and or external queries to the VPN DNS server.
 
-Tried to import the OpenVPN setting:
+I reverted this setting with: `nmcli c modify wg-home-all ipv4.dns ""`.
+
+I also tried to import the OpenVPN setting, but got an error message:
 
 ```sh
 ❯ nmcli connection import type openvpn file tmp/openvpn/myopenvpn.conf
@@ -208,22 +214,23 @@ Error: failed to import 'tmp/openvpn/myopenvpn.conf': configuration error: unsup
 route remote_host 255.255.255.255 net_gateway
 ````
 
-Removed the line in question. Its a bug in network-manager: https://bugs.launchpad.net/ubuntu/+source/network-manager-openvpn/+bug/606365/comments/68 + https://askubuntu.com/a/1013116
+I removed the line in question. Its a bug in network-manager: https://bugs.launchpad.net/ubuntu/+source/network-manager-openvpn/+bug/606365/comments/68 + https://askubuntu.com/a/1013116
+
+Importing the setting worked fine afterwards:
 
 ```sh
 ❯ nmcli connection import type openvpn file tmp/openvpn/myopenvpn.conf
 Connection 'myopenvpn' (62875c23-aadf-4d1c-896c-65e14cdb9a5e) successfully added.
 ````
 
-I had to set the VPN password:
+I connected the VPN (via the NetworkManager GUI) and was prompted for the VPN password and saved it:
 
 ```sh
 ❯ nmcli c show --show-secrets myopenvpn | grep vpn.secret
 vpn.secrets:                            password = [SNIP]
 ```
 
-
-There still was problem with the connection:
+There still was problem with some connections:
 
 ```
 Oct 16 09:08:20 tranquility nm-openvpn[86980]: VERIFY ERROR: depth=0, error=CA signature digest algorithm too weak: C=at, [SNIP]
@@ -234,25 +241,7 @@ Oct 16 09:08:20 tranquility nm-openvpn[86980]: TLS Error: TLS handshake failed
 Oct 16 09:08:20 tranquility nm-openvpn[86980]: Fatal TLS error (check_tls_errors_co), restarting
 ```
 
-In Network Setting > VPN connection myopenvpn > Identiy > Advanced > TLS Authentication > Additional TLS authentication or encryption
-
-* TLS cipher string: DEFAULT:@SECLEVEL=0
-
-See: https://superuser.com/a/1737054
-
-Then disabled autoconnect + "use this connection only for resources on its network":
-
-```sh
-❯ nmcli c modify myopenvpn connection.autoconnect no
-❯ nmcli c modify myopenvpn ipv4.never-default yes
 ```
-
-### NetworkManager: openvpn configuration
-
-```
-Nov 09 15:15:52 tranquility NetworkManager[2609594]: <info>  [1699539352.4011] agent-manager: agent[35facdc0daaf3791,:1.1017534/nmcli-connect/1000]: agent registered
-Nov 09 15:15:52 tranquility NetworkManager[2609594]: <info>  [1699539352.4080] vpn[0x55e7f43d04b0,d181c6fa-bff5-41ee-8d4f-a1a533cca41f,"snr"]: starting openvpn
-Nov 09 15:15:52 tranquility NetworkManager[2609594]: <info>  [1699539352.4083] audit: op="connection-activate" uuid="d181c6fa-bff5-41ee-8d4f-a1a533cca41f" name="snr" pid=2610289 uid=1000 result="success"
 Nov 09 15:15:52 tranquility NetworkManager[2610319]: 2023-11-09 15:15:52 WARNING: Compression for receiving enabled. Compression has been used in the past to break encryption. Sent packets are not compressed unless "allow-compression yes" is also set.
 Nov 09 15:15:52 tranquility nm-openvpn[2610319]: OpenVPN 2.6.3 x86_64-pc-linux-gnu [SSL (OpenSSL)] [LZO] [LZ4] [EPOLL] [PKCS11] [MH/PKTINFO] [AEAD] [DCO]
 Nov 09 15:15:52 tranquility nm-openvpn[2610319]: library versions: OpenSSL 3.0.11 19 Sep 2023, LZO 2.10
@@ -264,13 +253,34 @@ Nov 09 15:15:52 tranquility nm-openvpn[2610319]: Cannot load certificate file /h
 Nov 09 15:15:52 tranquility nm-openvpn[2610319]: Exiting due to fatal error
 ```
 
-In Network Settings > VPN > Settings > TLS Authentication > added TLS cipher string "DEFAULT:@SECLEVEL=0" (without quotes) to workaround this.
+I had to change the following setting:
 
-See: https://superuser.com/a/1741782
+In Network Setting > VPN connection myopenvpn > Identiy > Advanced > TLS Authentication > Additional TLS authentication or encryption
 
-### NetworkManager + dnsmasq
+* TLS cipher string: `DEFAULT:@SECLEVEL=0`
+
+See:
+
+* https://superuser.com/a/1737054
+* https://superuser.com/a/1741782
+
+This setting is only needed for older OpenVPN servers.
+
+I then disabled autoconnect + set "use this connection only for resources on its network":
+
+```sh
+❯ nmcli c modify myopenvpn connection.autoconnect no
+❯ nmcli c modify myopenvpn ipv4.never-default yes
+```
+
+### NetworkManager with dnsmasq
+
+I use NetworkManager together with dnsmasq to be able to query different DNS servers for different domains.
+
+I migrated my dnsmasq settings:
 
 ```
+❯ sudo cp -a /mnt/etc/NetworkManager/dnsmasq.d/*.conf /etc/NetworkManager/dnsmasq.d
 ❯ sudo cp -a /mnt/etc/NetworkManager/conf.d/dnsmasq.conf /etc/NetworkManager/conf.d
 
 ❯ cat /etc/NetworkManager/conf.d/dnsmasq.conf
@@ -278,20 +288,22 @@ See: https://superuser.com/a/1741782
 dns=dnsmasq
 ```
 
-Add DNS server for "internal" domains to the dnsmasq configuration
+A DNS server for the "internal" domain looks like this:
 
 ```
 ❯ cat /etc/NetworkManager/dnsmasq.d/helios.conf
 server=/h2.syn-net.org/10.10.1.1
 ```
 
-No DNS should be set in the VPN settings.
+Queries for `h2.syn-net.org` go to the DNS server 10.10.1.1.
 
-See (to be answered): ubuntu - Using dnsmasq with NetworkManager - Super User: https://superuser.com/questions/681993/using-dnsmasq-with-networkmanager
+No DNS should be set in the VPN settings.
 
 ### NetworkManager Auto Connection:
 
-Check auto-connection:
+If the autoconnect is set to true, the NetworkManager activates the connection automatically.
+
+To check auto-connection:
 
 ```sh
 ❯ nmcli c show wg-hetzner | grep connection.autoconnect:
@@ -301,6 +313,8 @@ connection.autoconnect:                 yes
 I noticed that the VPN DNS take priority over the globally set on.
 But if multiple VPN connections are enabled, the order from which they are started makes a difference.
 I will have to investigate the "ipv4.dns-priority" setting.
+
+However, as I use dnsmasq for my VPN domains, I usually have do not have a DNS server set up for my VPN connections.
 
 ### NetworkManager Mobile Broadband
 
@@ -413,11 +427,14 @@ Other links:
 
 * Related: Driver for Fibocom L850-GL / Intel XMM7360 (PCI ID 8086:7360): https://github.com/xmm7360/xmm7360-pci/pull/50
 
-### NetworkManager: read WIFI via QR code
+Unfortunately I could not get the modem to work.
+I will investigate the problem later.
 
-Install wifi-qr:
+### NetworkManager: read / share WIFI via QR code
 
-  kokoye2007/wifi-qr: Wifi QR code create and scan for linux: https://github.com/kokoye2007/wifi-qr
+I found this nifty tool, that allows me to share the current + and share the WIFI connection via QR code:
+
+*  kokoye2007/wifi-qr: Wifi QR code create and scan for linux: https://github.com/kokoye2007/wifi-qr
 
 ```
 wifi-qr s
@@ -425,14 +442,14 @@ wifi-qr s
 
 ## Cinnamon Settings
 
-I noticed that some of the settings were not loaded instantly / automatically (although they should).
-I spastically noticed that with the following keyboard shortcuts.
+I noticed that some of the settings were not loaded immediately/automatically (although they should be).
+I noticed this by any chance with the following shortcuts.
 
 What helped, was to delete the setting / unregister the keyboard shortcut and load the (specific) setting again.
 
 One can monitor the changes to the dconf database with `dconf watch PATH`
 
-The problem is, that the keyboard shortcuts are not listed in the custom-list:
+The underlying problem is, that the keyboard shortcuts are not listed in the `custom-list`:
 
 ```
     ❯ dconf list /org/cinnamon/desktop/keybindings/custom-keybindings/
@@ -449,6 +466,8 @@ The problem is, that the keyboard shortcuts are not listed in the custom-list:
     ❯ dconf read /org/cinnamon/desktop/keybindings/custom-list
     ['custom8', 'custom0', 'custom1', 'custom2', 'custom3', 'custom5', 'custom6', 'custom7']
 ```
+
+I could not figure out, why keybinding is lost from the custom-list.
 
 ### Cinnamon Keyboard Shortcuts
 
