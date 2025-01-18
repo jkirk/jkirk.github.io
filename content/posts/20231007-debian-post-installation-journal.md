@@ -49,6 +49,8 @@ The next step was to migrate the data. I have several mount points that I copy t
 ❯ sudo rsync -avxHAX --progress --delete /home/jkirk /home/jkirk/projects /home/jkirk/software /home/jkirk/Documents/Archive /home/jkirk/Pictures /home/jkirk/software /etc /media/jkirk/WORK01/backup.executor.20231005
 ```
 
+Whenever I migrate data, the directory of the external disc `backup.executor.20231005` is mounted under `/mnt`.
+
 ## Settings
 
 ### Change hostname + LVM Volume Group Name
@@ -442,54 +444,22 @@ wifi-qr s
 
 ## Cinnamon Settings
 
-I noticed that some of the settings were not loaded immediately/automatically (although they should be).
-I noticed this by any chance with the following shortcuts.
-
-What helped, was to delete the setting / unregister the keyboard shortcut and load the (specific) setting again.
-
-One can monitor the changes to the dconf database with `dconf watch PATH`
-
-The underlying problem is, that the keyboard shortcuts are not listed in the `custom-list`:
-
-```
-    ❯ dconf list /org/cinnamon/desktop/keybindings/custom-keybindings/
-    custom0/
-    custom1/
-    custom2/
-    custom3/
-    custom4/
-    custom5/
-    custom6/
-    custom7/
-    custom8/
-
-    ❯ dconf read /org/cinnamon/desktop/keybindings/custom-list
-    ['custom8', 'custom0', 'custom1', 'custom2', 'custom3', 'custom5', 'custom6', 'custom7']
-```
-
-I could not figure out, why keybinding is lost from the custom-list.
-
 ### Cinnamon Keyboard Shortcuts
 
-TODO: transfer file:
+Cinnamon stores its settings in the dconf database.
 
-```
-❯ dconf read /org/cinnamon/desktop/keybindings/custom-list
-['custom4', 'custom7', 'custom6', 'custom5', 'custom3', 'custom2', 'custom1', 'custom0', 'custom8']
-```
+I could have used `dconf dump` to dump the database or copy the whole database `$HOME/.config/dconf/user` (that is `$XDG_CONFIG_HOME/dconf/user`).
+But over the years some unintentional / unneeded settings have accumulated.
 
-To backup Cinnamon Setting one has to use `dconf dump`.
+So I did not want to restore every setting I had made in Cinnamon.
 
-Over the years some unintentional / unneeded settings have accumulated.
-So I did not want to restore every setting I have set in Cinnamon.
-
-To list the old settings, I copied the old dconf database next to the new one.
+To list the old settings, I copied the old dconf database next to the new one (the hostname of my old computer was `executor`).
 
 ```sh
-❯ cp /mnt/jkirk/.config/dconf/user .config/dconf/user_executor
+❯ cp /mnt/jkirk/.config/dconf/user ~/.config/dconf/user_executor
 ```
 
-In `.config/dconf/profile` I created a new "dconf profile" `executor` where I set the user `dconf database` file `user_executor`:
+In `~/.config/dconf/profile` I set up a new "dconf profile" and named it `executor` (see: `dconf(7)`) where I set the user database to `user_executor`:
 
 ```sh
 ❯ mkdir .config/dconf/profile
@@ -497,13 +467,17 @@ In `.config/dconf/profile` I created a new "dconf profile" `executor` where I se
 user-db:user_executor
 ```
 
-With the `DCONF_PROFILE` environment variable set, dconf will attempt to open the named profile.
+With the `DCONF_PROFILE` environment variable, dconf will attempt to open the named profile.
 
 For example, to list the Window Manager keybindings of my current (empty) my old system, I can list them like this:
 
 ```sh
 ❯ dconf dump /org/cinnamon/desktop/keybindings/wm/
+```
 
+To list the keybindings on my "old" system, I listed them like this:
+
+```sh
 ❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/cinnamon/desktop/keybindings/wm/
 [/]
 lower=['<Shift><Alt>m']
@@ -560,7 +534,47 @@ See:
 * dconf(1)
 * dconf(7)
 
-### Cinnamon Keyboard Settings
+### Cinnamon Lost Keyboard Settings
+
+I noticed that some of the keyboard shortcut setting were not loaded immediately/automatically (although they should be).
+What helped, was to delete the setting / unregister the keyboard shortcut and load the (specific) setting again.
+
+One can monitor the changes to the dconf database with `dconf watch PATH`
+
+The keybindings itself are defined in the following keys;
+
+```sh
+    ❯ dconf list /org/cinnamon/desktop/keybindings/custom-keybindings/
+    custom0/
+    custom1/
+    custom2/
+    custom3/
+    custom4/
+    custom5/
+    custom6/
+    custom7/
+    custom8/
+```
+
+It turned out that the underlying problem is that the keyboard shortcuts are not listed in the `custom-list`:
+
+```sh
+    ❯ dconf read /org/cinnamon/desktop/keybindings/custom-list
+    ['custom8', 'custom0', 'custom1', 'custom2', 'custom3', 'custom5', 'custom6', 'custom7']
+```
+
+Added `custom8` to `custom-list` and the keyboard started working:
+
+```
+❯ dconf read /org/cinnamon/desktop/keybindings/custom-list
+['custom4', 'custom7', 'custom6', 'custom5', 'custom3', 'custom2', 'custom1', 'custom0', 'custom8']
+```
+
+I could not find out why keybindings are lost from the custom list.
+
+### Cinnamon Keyboard Layout / Settings
+
+I already had set the keybaord layout, but checked it with my previous setup:
 
 ```sh
 ❯ dconf dump /org/gnome/libgnomekbd/keyboard/
@@ -576,7 +590,7 @@ options=['grp\tgrp:shift_caps_toggle']
 
 ### Cinnamon Settings: gnome-screenshot
 
-Transferred the settings:
+I took over all my settings regarding `gnome-screenshot`:
 
 ```sh
 ❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/gnome/gnome-screenshot/
@@ -593,7 +607,7 @@ last-save-directory='file:///home/jkirk/Pictures/screenshots'
 
 ### Cinnamon Settings: gnome-terminal
 
-Transferred the settings:
+I took over all my settings regarding `gnome-terminal`:
 
 ```sh
 ❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/gnome/terminal/legacy/ | dconf load /org/gnome/terminal/legacy/
@@ -601,15 +615,27 @@ Transferred the settings:
 
 ### Cinnamon Settings: Diodon
 
-Transferred the settings:
+I took over all my settings regarding `diodon`:
 
 ```sh
 ❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /net/launchpad/diodon/ | dconf load /net/launchpad/diodon/
+
+❯ dconf dump /net/launchpad/diodon/     
+[clipboard]
+add-images=true
+instant-paste=false
+keep-clipboard-content=false
+synchronize-clipboards=false
+use-clipboard=true
+use-primary=true
+
+[plugins]
+active-plugins=['indicator']
 ```
 
-The problem with the menu popup seems to fixed: https://bugs.launchpad.net/diodon/+bug/1630375
+The problem with the menu popup seems to fixed, no delay is needed anymore: https://bugs.launchpad.net/diodon/+bug/1630375
 
-Changed the delayed start:
+Replaced the wrapper start which delayed the start of `diodon`:
 
 ```sh
 ❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/cinnamon/desktop/keybindings/custom-keybindings/custom4/
@@ -636,9 +662,11 @@ Changed the Alt-Tab switcher style from "Icons and thumbnails" to "Icons and win
 
 ### Cinnamon Settings: Theme
 
+The default theme of the GNOME Terminal looks like this:
+
 ![](screenshot_20231007T160540.png "Default Theme of GNOME Terminal")
 
-I had the following settings in Debian bullseye
+I had the following settings in Debian/bullseye:
 
 ![](screenshot_20231007T115946.png "Cinnamon Themes on Debian/bullseye")
 
@@ -651,6 +679,9 @@ I like a dark theme like Adapta-Nokoto, so after installing the theme I changed 
 ![](screenshot_20231007T163736.png "GNOME Terminal in Adapta-Nokoto Theme")
 
 ### Cinnamon Settings: Nemo
+
+I had some custom settings for the file manager nemo.
+I transferred them like so:
 
 ```
 ❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/nemo/
@@ -692,7 +723,7 @@ start-with-sidebar=true
 ❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/nemo/ | dconf load /org/nemo/
 ```
 
-Disable media handling:
+I especially disabled media handling:
 
 ```
 ❯ DCONF_PROFILE=/home/jkirk/.config/dconf/profile/executor dconf dump /org/cinnamon/desktop/media-handling/
@@ -709,14 +740,14 @@ autorun-x-content-start-app=['x-content/audio-player', 'x-content/image-dcf']
 
 ### Cinnamon Settings: Applets
 
-The default applets:
+I had the following applets Cinnamon applets installed:
 
 ```
 ❯ dconf read /org/cinnamon/enabled-applets
 ['panel1:left:0:menu@cinnamon.org:0', 'panel1:left:1:separator@cinnamon.org:1', 'panel1:left:2:grouped-window-list@cinnamon.org:2', 'panel1:right:0:systray@cinnamon.org:3', 'panel1:right:1:xapp-status@cinnamon.org:4', 'panel1:right:2:notifications@cinnamon.org:5', 'panel1:right:3:printers@cinnamon.org:6', 'panel1:right:4:removable-drives@cinnamon.org:7', 'panel1:right:5:keyboard@cinnamon.org:8', 'panel1:right:6:favorites@cinnamon.org:9', 'panel1:right:7:network@cinnamon.org:10', 'panel1:right:8:sound@cinnamon.org:11', 'panel1:right:9:power@cinnamon.org:12', 'panel1:right:10:calendar@cinnamon.org:13', 'panel1:right:11:cornerbar@cinnamon.org:14']
 ```
 
-Make it more readable:
+To make it more readable:
 
 ```
 ❯ dconf read /org/cinnamon/enabled-applets | tr -d '\]' | tr -d '\[' | tr ',' '\n' | tr -d ' '
@@ -741,15 +772,14 @@ Make it more readable:
 
 ### taskwarrior
 
-Migrated taskwarrior data location:
+I migrated the taskwarrior data location:
 
 ```
 ❯ cp -a /mnt/jkirk/Documents/taskwarrior/.task .task
 ```
 
-And migrated the taskrc configuration file from /mnt/jkirk/Documents/taskwarrior to dotfiles.
-
-See: Merge unrelated git histories.
+And migrated the taskrc configuration file from /mnt/jkirk/Documents/taskwarrior to my dotfiles.
+Notably the following questions were asked and information was shown:
 
 ```
 (1/5) 'Writeable' context
@@ -757,27 +787,11 @@ See: Merge unrelated git histories.
 
   What do I have to do?
   You have 9 defined contexts, out of which 9 are old-style:
-  * als: proj:sp.als
-  * home: proj.not:sp
-  * lw: proj:lw
-  * notals: proj.not:sp.als
-  * oebm: tags:oebm
-  * pmt: proj:sp.pmt
-  * prt: proj:sp.prt
-  * waldrapp: proj:sn.waldrapp
-  * work: project.has:sn or project.has:sp
+  [...]
 
   These need to be migrated to new-style, which uses context.<name>.read and
   context.<name>.write config variables. Please run the following commands:
-  $ task context define als 'proj:sp.als'
-  $ task context define home 'proj.not:sp'
-  $ task context define lw 'proj:lw'
-  $ task context define notals 'proj.not:sp.als'
-  $ task context define oebm 'tags:oebm'
-  $ task context define pmt 'proj:sp.pmt'
-  $ task context define prt 'proj:sp.prt'
-  $ task context define waldrapp 'proj:sn.waldrapp'
-  $ task context define work 'project.has:sn or project.has:sp'
+  [...]
 
   Please check these filters are also valid modifications. If a context filter is not
   a valid modification, you can set the context.<name>.write configuration variable to
@@ -865,10 +879,9 @@ Run 'task news 2.6.0 minor' for more.
 
 Run 'task news 2.6.0'.
 
-
 ### VIM
 
-
+The following error was shown, after I started vim:
 
 ```
 error detected while processing modelines:
@@ -876,7 +889,7 @@ line 4207:
 E992: Not allowed in a modeline when 'modelineexpr' is off: foldtext=getline(v:foldstart).'...'.(v:foldend-v:foldstart)
 ```
 
-Check modelines settings:
+I checked the modelines settings:
 
 ```
 :set modeline?
@@ -884,9 +897,14 @@ Check modelines settings:
 :set modelinexpr?
 ```
 
-modeline if off by default in Debian, see:
+modeline if off by default in Debian, see: ``:help 'modeline'`` + ``:help 'modelineexpr'``
 
+I made sure that `modeline` + `modelineexpr` are set in my `.vimrc.local`
 
+```
+ set modeline
+ set modelineexpr
+```
 ### Firefox Quantum
 
 I used to have Firefox Quantum in `$HOME/software/firefox`.
