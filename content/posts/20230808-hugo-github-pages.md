@@ -31,7 +31,7 @@ I read some documentation before I started my journey:
 * [Hugo | Host on GitHub Pages](https://gohugo.io/hosting-and-deployment/hosting-on-github/)
 
 My Jekyll GitHub Page was in the branch `gh-pages`.
-I wanted to put the Hugo site in a separate `gh-pages-hugo` branch, and so I as a first step I created a new unrelated branch:
+I wanted to put the Hugo site in a separate `gh-pages-hugo` branch, and so as a first step I created a new unrelated branch:
 
 ```sh
   ~/projects/websites/jkirk.github.io on  gh-pages (2cb49e6) via 💎 v2.7.4 took 35s
@@ -50,7 +50,7 @@ I wanted to put the Hugo site in a separate `gh-pages-hugo` branch, and so I as 
 
 I am still running Debian/bullseye, which only includes Hugo in version [0.80.0](https://packages.debian.org/bullseye/hugo).
 Debian/bookwork includes Hugo in version [0.111.3](https://packages.debian.org/bookworm/hugo), but my Debian upgrade is still on my to-do list.
-So I decided to use the docker/podman image `hugo:0.111.3-debian` to match the Hugo version in Debian/bookworm to develop the site:
+So I decided to use the docker/podman image [hugo:0.111.3-debian](https://hub.docker.com/layers/klakegg/hugo/0.111.3-debian/images/sha256-fe659c065dac9be99cae7d0e34190cdeefc167677ff3eff1a186868f25f61811) to match the Hugo version in Debian/bookworm to develop the site:
 
 ```sh
   at 2023-08-02 01:32:51 +02:00 ❯ podman pull docker.io/klakegg/hugo:0.111.3-debian
